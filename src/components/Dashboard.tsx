@@ -20,7 +20,7 @@ const Dashboard = () => {
       try {
         const { data, error } = await supabase
           .from('machines')
-          .select('machine_id, machine_name')
+          .select('machine_name')
           .order('machine_name');
         console.log(error)
         if (error) {
