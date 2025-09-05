@@ -22,7 +22,7 @@ const Dashboard = () => {
           .from('machines')
           .select('machine_id, machine_name')
           .order('machine_name');
-        
+        console.log(data)
         if (error) {
           console.error('Error fetching machines:', error);
           return;
@@ -31,7 +31,7 @@ const Dashboard = () => {
         setMachines(data || []);
         if (data && data.length > 0) {
           setSelectedMachine(data[0].machine_name);
-          console.log(data)
+          
         }
       } catch (error) {
         console.error('Error fetching machines:', error);
