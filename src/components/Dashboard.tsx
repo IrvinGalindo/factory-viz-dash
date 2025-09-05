@@ -1,16 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { machines, generateMockData } from '@/data/mockData';
+import { generateMockData } from '@/data/mockData';
 import { EfficiencyChart } from '@/components/charts/EfficiencyChart';
 import { ProductionChart } from '@/components/charts/ProductionChart';
 import { StatusChart } from '@/components/charts/StatusChart';
 import { TemperatureChart } from '@/components/charts/TemperatureChart';
 import { AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
-  const [selectedMachine, setSelectedMachine] = useState('machine-1');
+  const [selectedMachine, setSelectedMachine] = useState('');
+  const [machines, setMachines] = useState<{ machine_id: string; machine_name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchMachines = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('machines')
+          .select('machine_id, machine_name')
+          .order('machine_name');
+        
+        if (error) {
+          console.error('Error fetching machines:', error);
+          return;
+        }
+        
+        setMachines(data || []);
+        if (data && data.length > 0) {
+          setSelectedMachine(data[0].machine_id);
+        }
+      } catch (error) {
+        console.error('Error fetching machines:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchMachines();
+  }, []);
+  
   const data = generateMockData(selectedMachine);
 
   const getPriorityIcon = (priority: string) => {
@@ -56,8 +87,8 @@ const Dashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {machines.map((machine) => (
-                  <SelectItem key={machine.id} value={machine.id}>
-                    {machine.name}
+                  <SelectItem key={machine.machine_id} value={machine.machine_id}>
+                    {machine.machine_name}
                   </SelectItem>
                 ))}
               </SelectContent>
