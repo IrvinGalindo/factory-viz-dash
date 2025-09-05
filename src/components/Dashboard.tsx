@@ -22,7 +22,7 @@ const Dashboard = () => {
           .from('machines')
           .select('machine_id, machine_name')
           .order('machine_name');
-        console.log(data)
+        console.log(error)
         if (error) {
           console.error('Error fetching machines:', error);
           return;
