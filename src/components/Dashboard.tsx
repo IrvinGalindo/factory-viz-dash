@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const [selectedMachine, setSelectedMachine] = useState('');
-  const [machines, setMachines] = useState<{ machine_id: string; machine_name: string }[]>([]);
+  const [machines, setMachines] = useState<{ machine_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -20,7 +20,7 @@ const Dashboard = () => {
       try {
         const { data, error } = await supabase
           .from('machines')
-          .select('machine_id, machine_name')
+          .select('machine_name')
           .order('machine_name');
         
         if (error) {
@@ -30,7 +30,7 @@ const Dashboard = () => {
         
         setMachines(data || []);
         if (data && data.length > 0) {
-          setSelectedMachine(data[0].machine_id);
+          setSelectedMachine(data[0].machine_name);
         }
       } catch (error) {
         console.error('Error fetching machines:', error);
@@ -108,7 +108,7 @@ const Dashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {machines.map((machine) => (
-                  <SelectItem key={machine.machine_id} value={machine.machine_id}>
+                  <SelectItem key={machine.machine_name} value={machine.machine_name}>
                     {machine.machine_name}
                   </SelectItem>
                 ))}
