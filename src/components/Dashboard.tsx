@@ -19,7 +19,7 @@ const Dashboard = () => {
     const fetchMachines = async () => {
       try {
         const { data, error } = await supabase
-          .from('public.machines')
+          .from('machines')
           .select('machine_name')
           .order('machine_name');
         console.log(error)
