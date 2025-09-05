@@ -20,7 +20,7 @@ const Dashboard = () => {
       try {
         const { data, error } = await supabase
           .from('machines')
-          .select('machine_name')
+          .select('machine_id, machine_name')
           .order('machine_name');
         
         if (error) {
@@ -31,6 +31,7 @@ const Dashboard = () => {
         setMachines(data || []);
         if (data && data.length > 0) {
           setSelectedMachine(data[0].machine_name);
+          console.log(data)
         }
       } catch (error) {
         console.error('Error fetching machines:', error);
