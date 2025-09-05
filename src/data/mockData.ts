@@ -1,10 +1,4 @@
 // Mock data for dashboard charts and recommendations
-export const machines = [
-  { id: 'machine-1', name: 'Máquina A - Producción' },
-  { id: 'machine-2', name: 'Máquina B - Ensamble' },
-  { id: 'machine-3', name: 'Máquina C - Empaque' },
-  { id: 'machine-4', name: 'Máquina D - Control Calidad' },
-];
 
 export const generateMockData = (machineId: string) => {
   const baseData = {
