@@ -7,6 +7,7 @@ import { EfficiencyChart } from '@/components/charts/EfficiencyChart';
 import { ProductionChart } from '@/components/charts/ProductionChart';
 import { StatusChart } from '@/components/charts/StatusChart';
 import { TemperatureChart } from '@/components/charts/TemperatureChart';
+import { SPCChart } from '@/components/charts/SPCChart';
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,6 +16,10 @@ const Dashboard = () => {
   const [machines, setMachines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedProcess, setSelectedProcess] = useState('');
+  const [processes, setProcesses] = useState([]);
+  const [spcData, setSpcData] = useState(null);
+  const [spcLoading, setSpcLoading] = useState(false);
   
   useEffect(() => {
     const fetchMachines = async () => {
@@ -68,6 +73,126 @@ const Dashboard = () => {
     
     fetchMachines();
   }, []);
+
+  // Fetch processes when machine is selected
+  useEffect(() => {
+    const fetchProcesses = async () => {
+      if (!selectedMachine) {
+        setProcesses([]);
+        setSelectedProcess('');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('processes')
+          .select(`
+            process_number,
+            result_process!inner(
+              machine_id,
+              machines!inner(machine_name)
+            )
+          `)
+          .eq('result_process.machines.machine_name', selectedMachine);
+
+        if (error) {
+          console.error('Error fetching processes:', error);
+          return;
+        }
+
+        const uniqueProcesses = [...new Set(data?.map(p => p.process_number))].filter(Boolean);
+        setProcesses(uniqueProcesses);
+        
+        if (uniqueProcesses.length > 0) {
+          setSelectedProcess(uniqueProcesses[0]);
+        }
+      } catch (error) {
+        console.error('Error in fetchProcesses:', error);
+      }
+    };
+
+    fetchProcesses();
+  }, [selectedMachine]);
+
+  // Fetch SPC data when machine and process are selected
+  useEffect(() => {
+    const fetchSPCData = async () => {
+      if (!selectedMachine || !selectedProcess) {
+        setSpcData(null);
+        return;
+      }
+
+      setSpcLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('processes')
+          .select(`
+            value,
+            result_process!inner(
+              machine_id,
+              machines!inner(machine_name)
+            )
+          `)
+          .eq('result_process.machines.machine_name', selectedMachine)
+          .eq('process_number', selectedProcess);
+
+        if (error) {
+          console.error('Error fetching SPC data:', error);
+          setSpcData(null);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const values = data.map(d => d.value).filter(v => v !== null);
+          
+          if (values.length > 0) {
+            const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+            const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
+            const std = Math.sqrt(variance);
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            
+            const ucl = avg + (3 * std);
+            const lcl = avg - (3 * std);
+            const spec = avg + (2 * std); // Assuming spec is 2 sigma above average
+            
+            const cp = std > 0 ? (ucl - lcl) / (6 * std) : 0;
+            const cpk = std > 0 ? Math.min((spec - avg) / (3 * std), (avg - lcl) / (3 * std)) : 0;
+
+            const chartData = values.map((value, index) => ({
+              point: index + 1,
+              value,
+              ucl,
+              lcl,
+              avg,
+              spec
+            }));
+
+            const stats = {
+              spec,
+              ucl,
+              lcl,
+              avg,
+              std,
+              max,
+              min,
+              cp,
+              cpk
+            };
+
+            setSpcData({ data: chartData, stats });
+          }
+        }
+      } catch (error) {
+        console.error('Error in fetchSPCData:', error);
+        setSpcData(null);
+      } finally {
+        setSpcLoading(false);
+      }
+    };
+
+    fetchSPCData();
+  }, [selectedMachine, selectedProcess]);
 
   // Función para probar la conexión manualmente
   const testConnection = async () => {
@@ -212,6 +337,47 @@ const Dashboard = () => {
         {/* Solo mostrar charts si hay una máquina seleccionada */}
         {selectedMachine && data && (
           <>
+            {/* SPC Control Chart Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Control Estadístico de Procesos (SPC)</CardTitle>
+                    <CardDescription>
+                      Gráfico de control para la máquina: {selectedMachine}
+                    </CardDescription>
+                  </div>
+                  <div className="w-60">
+                    <Select value={selectedProcess} onValueChange={setSelectedProcess}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar proceso" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {processes.map((process) => (
+                          <SelectItem key={process} value={process}>
+                            Proceso {process}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {spcLoading ? (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : spcData ? (
+                  <SPCChart data={spcData.data} stats={spcData.stats} />
+                ) : (
+                  <div className="flex items-center justify-center h-96 text-muted-foreground">
+                    {selectedProcess ? 'No hay datos disponibles para este proceso' : 'Selecciona un proceso para ver el gráfico SPC'}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Charts Grid */}
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
