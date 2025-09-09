@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { generateMockData } from '@/data/mockData';
 import { EfficiencyChart } from '@/components/charts/EfficiencyChart';
@@ -8,7 +11,7 @@ import { ProductionChart } from '@/components/charts/ProductionChart';
 import { StatusChart } from '@/components/charts/StatusChart';
 import { TemperatureChart } from '@/components/charts/TemperatureChart';
 import { SPCChart } from '@/components/charts/SPCChart';
-import { AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, AlertTriangle, ChevronsUpDown, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
@@ -20,6 +23,8 @@ const Dashboard = () => {
   const [processes, setProcesses] = useState([]);
   const [spcData, setSpcData] = useState(null);
   const [spcLoading, setSpcLoading] = useState(false);
+  const [machineOpen, setMachineOpen] = useState(false);
+  const [processOpen, setProcessOpen] = useState(false);
   
   useEffect(() => {
     const fetchMachines = async () => {
@@ -319,18 +324,44 @@ const Dashboard = () => {
           </div>
           
           <div className="w-80">
-            <Select value={selectedMachine} onValueChange={setSelectedMachine}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar máquina" />
-              </SelectTrigger>
-              <SelectContent>
-                {machines.map((machine, index) => (
-                  <SelectItem key={`${machine.machine_name}-${index}`} value={machine.machine_name}>
-                    {machine.machine_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={machineOpen} onOpenChange={setMachineOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={machineOpen}
+                  className="w-full justify-between"
+                >
+                  {selectedMachine || "Seleccionar máquina..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0">
+                <Command>
+                  <CommandInput placeholder="Buscar máquina..." />
+                  <CommandEmpty>No se encontraron máquinas.</CommandEmpty>
+                  <CommandGroup>
+                    {machines.map((machine, index) => (
+                      <CommandItem
+                        key={`${machine.machine_name}-${index}`}
+                        value={machine.machine_name}
+                        onSelect={(currentValue) => {
+                          setSelectedMachine(currentValue === selectedMachine ? "" : currentValue);
+                          setMachineOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${
+                            selectedMachine === machine.machine_name ? "opacity-100" : "opacity-0"
+                          }`}
+                        />
+                        {machine.machine_name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
@@ -348,18 +379,44 @@ const Dashboard = () => {
                     </CardDescription>
                   </div>
                   <div className="w-60">
-                    <Select value={selectedProcess} onValueChange={setSelectedProcess}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar proceso" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {processes.map((process) => (
-                          <SelectItem key={process} value={process}>
-                            Proceso {process}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={processOpen} onOpenChange={setProcessOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={processOpen}
+                          className="w-full justify-between"
+                        >
+                          {selectedProcess ? `Proceso ${selectedProcess}` : "Seleccionar proceso..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-60 p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar proceso..." />
+                          <CommandEmpty>No se encontraron procesos.</CommandEmpty>
+                          <CommandGroup>
+                            {processes.map((process) => (
+                              <CommandItem
+                                key={process}
+                                value={process}
+                                onSelect={(currentValue) => {
+                                  setSelectedProcess(currentValue === selectedProcess ? "" : currentValue);
+                                  setProcessOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${
+                                    selectedProcess === process ? "opacity-100" : "opacity-0"
+                                  }`}
+                                />
+                                Proceso {process}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               </CardHeader>
