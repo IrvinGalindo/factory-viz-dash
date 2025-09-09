@@ -368,7 +368,7 @@ const Dashboard = () => {
                   <div className="flex items-center justify-center h-96">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
-                ) : spcData ? (
+                ) : spcData && spcData.data && spcData.stats ? (
                   <SPCChart data={spcData.data} stats={spcData.stats} />
                 ) : (
                   <div className="flex items-center justify-center h-96 text-muted-foreground">

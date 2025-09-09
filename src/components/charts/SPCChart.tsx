@@ -28,8 +28,8 @@ interface SPCChartProps {
 }
 
 export const SPCChart = ({ data, stats }: SPCChartProps) => {
-  // Show message when no data is available
-  if (!data || data.length === 0) {
+  // Show message when no data is available - FIXED CONDITION
+  if (!data || data.length === 0 || !stats) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-64">
