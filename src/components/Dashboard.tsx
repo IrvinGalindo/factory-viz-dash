@@ -344,9 +344,9 @@ const Dashboard = () => {
                     {machines.map((machine, index) => (
                       <CommandItem
                         key={`${machine.machine_name}-${index}`}
-                        value={machine.machine_name}
-                        onSelect={(currentValue) => {
-                          setSelectedMachine(currentValue === selectedMachine ? "" : currentValue);
+                        value={machine.machine_name.toLowerCase()}
+                        onSelect={() => {
+                          setSelectedMachine(machine.machine_name);
                           setMachineOpen(false);
                         }}
                       >
@@ -399,9 +399,9 @@ const Dashboard = () => {
                             {processes.map((process) => (
                               <CommandItem
                                 key={process}
-                                value={process}
-                                onSelect={(currentValue) => {
-                                  setSelectedProcess(currentValue === selectedProcess ? "" : currentValue);
+                                value={`proceso ${process}`.toLowerCase()}
+                                onSelect={() => {
+                                  setSelectedProcess(process);
                                   setProcessOpen(false);
                                 }}
                               >
