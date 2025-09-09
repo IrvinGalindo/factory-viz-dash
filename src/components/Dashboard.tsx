@@ -368,6 +368,13 @@ const Dashboard = () => {
                   <div className="flex items-center justify-center h-96">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
+                ) : processes.length === 0 ? (
+                  <div className="flex items-center justify-center h-96 text-muted-foreground">
+                    <div className="text-center">
+                      <div className="text-lg font-medium mb-2">No hay procesos para esta máquina</div>
+                      <div className="text-sm">La máquina seleccionada no tiene procesos disponibles</div>
+                    </div>
+                  </div>
                 ) : spcData && spcData.data && spcData.stats ? (
                   <SPCChart data={spcData.data} stats={spcData.stats} />
                 ) : (
