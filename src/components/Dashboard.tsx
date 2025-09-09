@@ -5,14 +5,17 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
 import { generateMockData } from '@/data/mockData';
 import { EfficiencyChart } from '@/components/charts/EfficiencyChart';
 import { ProductionChart } from '@/components/charts/ProductionChart';
 import { StatusChart } from '@/components/charts/StatusChart';
 import { TemperatureChart } from '@/components/charts/TemperatureChart';
 import { SPCChart } from '@/components/charts/SPCChart';
-import { AlertCircle, CheckCircle, Clock, AlertTriangle, ChevronsUpDown, Check } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, AlertTriangle, ChevronsUpDown, Check, CalendarIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { format, subDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const Dashboard = () => {
   const [selectedMachine, setSelectedMachine] = useState('');
@@ -25,6 +28,13 @@ const Dashboard = () => {
   const [spcLoading, setSpcLoading] = useState(false);
   const [machineOpen, setMachineOpen] = useState(false);
   const [processOpen, setProcessOpen] = useState(false);
+  
+  // Date range states
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 7), // Default: last 7 days
+    to: new Date()
+  });
+  const [dateOpen, setDateOpen] = useState(false);
   
   useEffect(() => {
     const fetchMachines = async () => {
@@ -129,17 +139,33 @@ const Dashboard = () => {
 
       setSpcLoading(true);
       try {
-        const { data, error } = await supabase
+        // Build the date filter
+        const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
+        const toDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
+
+        let query = supabase
           .from('processes')
           .select(`
             value,
+            created_at,
             result_process!inner(
               machine_id,
               machines!inner(machine_name)
             )
           `)
           .eq('result_process.machines.machine_name', selectedMachine)
-          .eq('process_number', selectedProcess);
+          .eq('process_number', selectedProcess)
+          .order('created_at', { ascending: true });
+
+        // Apply date filters if they exist
+        if (fromDate) {
+          query = query.gte('created_at', fromDate);
+        }
+        if (toDate) {
+          query = query.lte('created_at', toDate + 'T23:59:59.999Z');
+        }
+
+        const { data, error } = await query;
 
         if (error) {
           console.error('Error fetching SPC data:', error);
@@ -170,7 +196,8 @@ const Dashboard = () => {
               ucl,
               lcl,
               avg,
-              spec
+              spec,
+              date: data[index]?.created_at ? format(new Date(data[index].created_at), 'dd/MM/yyyy') : `Punto ${index + 1}`
             }));
 
             const stats = {
@@ -197,7 +224,7 @@ const Dashboard = () => {
     };
 
     fetchSPCData();
-  }, [selectedMachine, selectedProcess]);
+  }, [selectedMachine, selectedProcess, dateRange]);
 
   // Función para probar la conexión manualmente
   const testConnection = async () => {
@@ -323,45 +350,122 @@ const Dashboard = () => {
             </p>
           </div>
           
-          <div className="w-80">
-            <Popover open={machineOpen} onOpenChange={setMachineOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={machineOpen}
-                  className="w-full justify-between"
-                >
-                  {selectedMachine || "Seleccionar máquina..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0">
-                <Command>
-                  <CommandInput placeholder="Buscar máquina..." />
-                  <CommandEmpty>No se encontraron máquinas.</CommandEmpty>
-                  <CommandGroup>
-                    {machines.map((machine, index) => (
-                      <CommandItem
-                        key={`${machine.machine_name}-${index}`}
-                        value={machine.machine_name.toLowerCase()}
-                        onSelect={() => {
-                          setSelectedMachine(machine.machine_name);
-                          setMachineOpen(false);
+          <div className="flex items-center gap-4">
+            {/* Date Range Picker */}
+            <div className="w-80">
+              <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "dd/MM/yyyy", { locale: es })} -{" "}
+                          {format(dateRange.to, "dd/MM/yyyy", { locale: es })}
+                        </>
+                      ) : (
+                        format(dateRange.from, "dd/MM/yyyy", { locale: es })
+                      )
+                    ) : (
+                      <span>Seleccionar fechas...</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-3">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange.from}
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                      locale={es}
+                    />
+                    <div className="flex justify-between gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDateRange({
+                            from: subDays(new Date(), 7),
+                            to: new Date()
+                          });
                         }}
                       >
-                        <Check
-                          className={`mr-2 h-4 w-4 ${
-                            selectedMachine === machine.machine_name ? "opacity-100" : "opacity-0"
-                          }`}
-                        />
-                        {machine.machine_name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                        Últimos 7 días
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDateRange({
+                            from: subDays(new Date(), 30),
+                            to: new Date()
+                          });
+                        }}
+                      >
+                        Últimos 30 días
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDateOpen(false);
+                        }}
+                      >
+                        Aplicar
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Machine Selector */}
+            <div className="w-80">
+              <Popover open={machineOpen} onOpenChange={setMachineOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={machineOpen}
+                    className="w-full justify-between"
+                  >
+                    {selectedMachine || "Seleccionar máquina..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar máquina..." />
+                    <CommandEmpty>No se encontraron máquinas.</CommandEmpty>
+                    <CommandGroup>
+                      {machines.map((machine, index) => (
+                        <CommandItem
+                          key={`${machine.machine_name}-${index}`}
+                          value={machine.machine_name.toLowerCase()}
+                          onSelect={() => {
+                            setSelectedMachine(machine.machine_name);
+                            setMachineOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              selectedMachine === machine.machine_name ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          {machine.machine_name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
 
@@ -376,6 +480,11 @@ const Dashboard = () => {
                     <CardTitle>Control Estadístico de Procesos (SPC)</CardTitle>
                     <CardDescription>
                       Gráfico de control para la máquina: {selectedMachine}
+                      {dateRange.from && dateRange.to && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({format(dateRange.from, "dd/MM/yyyy", { locale: es })} - {format(dateRange.to, "dd/MM/yyyy", { locale: es })})
+                        </span>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="w-60">
