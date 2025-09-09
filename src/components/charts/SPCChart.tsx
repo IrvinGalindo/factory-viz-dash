@@ -28,6 +28,20 @@ interface SPCChartProps {
 }
 
 export const SPCChart = ({ data, stats }: SPCChartProps) => {
+  // Show message when no data is available
+  if (!data || data.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64">
+          <div className="text-center text-muted-foreground">
+            <div className="text-lg font-medium mb-2">No se encontraron procesos</div>
+            <div className="text-sm">No hay datos disponibles para la máquina seleccionada</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Statistics Panel */}
