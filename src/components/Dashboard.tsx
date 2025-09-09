@@ -376,11 +376,6 @@ const Dashboard = () => {
                     <CardTitle>Control Estadístico de Procesos (SPC)</CardTitle>
                     <CardDescription>
                       Gráfico de control para la máquina: {selectedMachine}
-                      {dateRange.from && dateRange.to && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          ({format(dateRange.from, "dd/MM/yyyy", { locale: es })} - {format(dateRange.to, "dd/MM/yyyy", { locale: es })})
-                        </span>
-                      )}
                     </CardDescription>
                   </div>
                   <div className="w-60">
