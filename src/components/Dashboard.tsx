@@ -143,6 +143,7 @@ const Dashboard = () => {
         const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
         const toDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
 
+        // Query processes table for SPC data
         let query = supabase
           .from('processes')
           .select(`
@@ -154,7 +155,7 @@ const Dashboard = () => {
             )
           `)
           .eq('result_process.machines.machine_name', selectedMachine)
-          .eq('process_number', selectedProcess)
+          .eq('process_number', selectedProcess.toString())
           .order('created_at', { ascending: true });
 
         // Apply date filters if they exist
@@ -174,7 +175,7 @@ const Dashboard = () => {
         }
 
         if (data && data.length > 0) {
-          const values = data.map(d => d.value).filter(v => v !== null);
+          const values = data.map(d => d.value).filter(v => v !== null && v !== undefined);
           
           if (values.length > 0) {
             const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
@@ -185,7 +186,7 @@ const Dashboard = () => {
             
             const ucl = avg + (3 * std);
             const lcl = avg - (3 * std);
-            const spec = avg + (2 * std); // Assuming spec is 2 sigma above average
+            const spec = avg + (2 * std);
             
             const cp = std > 0 ? (ucl - lcl) / (6 * std) : 0;
             const cpk = std > 0 ? Math.min((spec - avg) / (3 * std), (avg - lcl) / (3 * std)) : 0;
@@ -213,7 +214,11 @@ const Dashboard = () => {
             };
 
             setSpcData({ data: chartData, stats });
+          } else {
+            setSpcData(null);
           }
+        } else {
+          setSpcData(null);
         }
       } catch (error) {
         console.error('Error in fetchSPCData:', error);
