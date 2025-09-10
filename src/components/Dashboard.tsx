@@ -381,7 +381,14 @@ const Dashboard = () => {
                       mode="range"
                       defaultMonth={dateRange.from}
                       selected={dateRange}
-                      onSelect={setDateRange}
+                      onSelect={(range) => {
+                        if (range?.from) {
+                          setDateRange({
+                            from: range.from,
+                            to: range.to || range.from
+                          });
+                        }
+                      }}
                       numberOfMonths={2}
                       locale={es}
                     />
