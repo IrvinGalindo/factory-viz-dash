@@ -198,6 +198,8 @@ const Dashboard = () => {
               lcl,
               avg,
               spec,
+              min,
+              max,
               date: data[index]?.created_at ? format(new Date(data[index].created_at), 'dd/MM/yyyy') : `Punto ${index + 1}`
             }));
 

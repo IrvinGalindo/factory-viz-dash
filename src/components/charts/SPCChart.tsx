@@ -8,6 +8,8 @@ interface SPCData {
   lcl: number;
   avg: number;
   spec: number;
+  min: number;
+  max: number;
 }
 
 interface SPCStats {
@@ -142,6 +144,20 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
                 strokeWidth={2}
                 strokeDasharray="3 3"
                 label={{ value: "Avg", position: "left" }}
+              />
+              <ReferenceLine 
+                y={stats.max} 
+                stroke="#8b5cf6" 
+                strokeWidth={2}
+                strokeDasharray="2 2"
+                label={{ value: "Max", position: "left" }}
+              />
+              <ReferenceLine 
+                y={stats.min} 
+                stroke="#f59e0b" 
+                strokeWidth={2}
+                strokeDasharray="2 2"
+                label={{ value: "Min", position: "left" }}
               />
               
               {/* Data Line */}
