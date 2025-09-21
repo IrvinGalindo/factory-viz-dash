@@ -143,24 +143,36 @@ const Dashboard = () => {
         const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
         const toDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
 
-        // Query spc_statistics with JOINs to get SPC data
+        // Query following the structure: processes -> result_process -> machines -> spc_statistics
         let query = supabase
-          .from('spc_statistics')
+          .from('processes')
           .select(`
-            *,
+            value,
+            process_number,
+            created_at,
             result_process!inner(
+              result_process_id,
               date,
               machine_id,
-              machines!inner(machine_name)
-            ),
-            processes!inner(
-              value,
-              process_number,
-              created_at
+              machines!inner(machine_name),
+              spc_statistics!inner(
+                id,
+                measurement_name,
+                spec,
+                sample_count,
+                ucl,
+                lcl,
+                avg,
+                std,
+                max,
+                min,
+                cp,
+                cpk
+              )
             )
           `)
           .eq('result_process.machines.machine_name', selectedMachine)
-          .eq('processes.process_number', selectedProcess.toString());
+          .eq('process_number', selectedProcess.toString());
 
         // Apply date filters if they exist
         if (fromDate) {
@@ -170,74 +182,52 @@ const Dashboard = () => {
           query = query.lte('result_process.date', toDate);
         }
 
-        const { data: spcStats, error } = await query;
+        const { data: processData, error } = await query;
 
         if (error) {
-          console.error('Error fetching SPC statistics:', error);
+          console.error('Error fetching process data:', error);
           setSpcData(null);
           return;
         }
 
-        if (spcStats && spcStats.length > 0) {
-          // Get the first statistics record (should be unique per process/machine/date range)
-          const stats = spcStats[0];
+        if (processData && processData.length > 0) {
+          // Get the first process record and its SPC statistics
+          const firstProcess = processData[0];
+          const spcStats = firstProcess.result_process?.spc_statistics?.[0];
           
-          // Get process values for chart data
-          let processQuery = supabase
-            .from('processes')
-            .select(`
-              value,
-              created_at,
-              result_process!inner(
-                date,
-                machine_id,
-                machines!inner(machine_name)
-              )
-            `)
-            .eq('result_process.machines.machine_name', selectedMachine)
-            .eq('process_number', selectedProcess.toString())
-            .order('created_at', { ascending: true });
-
-          // Apply same date filters for process values
-          if (fromDate) {
-            processQuery = processQuery.gte('result_process.date', fromDate);
-          }
-          if (toDate) {
-            processQuery = processQuery.lte('result_process.date', toDate);
-          }
-
-          const { data: processValues, error: processError } = await processQuery;
-
-          if (processError) {
-            console.error('Error fetching process values:', processError);
+          if (!spcStats) {
+            console.log('No SPC statistics found for this process');
             setSpcData(null);
             return;
           }
 
-          const values = processValues?.map(d => d.value).filter(v => v !== null && v !== undefined) || [];
+          // Collect all process values for the chart
+          const values = processData
+            .map(d => d.value)
+            .filter(v => v !== null && v !== undefined);
           
           const chartData = values.map((value, index) => ({
             point: index + 1,
             value,
-            ucl: Number(stats.ucl) || 0,
-            lcl: Number(stats.lcl) || 0,
-            avg: Number(stats.avg) || 0,
-            spec: Number(stats.spec) || 0,
-            min: Number(stats.min) || 0,
-            max: Number(stats.max) || 0,
-            date: processValues[index]?.created_at ? format(new Date(processValues[index].created_at), 'dd/MM/yyyy') : `Punto ${index + 1}`
+            ucl: Number(spcStats.ucl) || 0,
+            lcl: Number(spcStats.lcl) || 0,
+            avg: Number(spcStats.avg) || 0,
+            spec: Number(spcStats.spec) || 0,
+            min: Number(spcStats.min) || 0,
+            max: Number(spcStats.max) || 0,
+            date: processData[index]?.created_at ? format(new Date(processData[index].created_at), 'dd/MM/yyyy') : `Punto ${index + 1}`
           }));
 
           const statisticsData = {
-            spec: Number(stats.spec) || 0,
-            ucl: Number(stats.ucl) || 0,
-            lcl: Number(stats.lcl) || 0,
-            avg: Number(stats.avg) || 0,
-            std: Number(stats.std) || 0,
-            max: Number(stats.max) || 0,
-            min: Number(stats.min) || 0,
-            cp: Number(stats.cp) || 0,
-            cpk: Number(stats.cpk) || 0
+            spec: Number(spcStats.spec) || 0,
+            ucl: Number(spcStats.ucl) || 0,
+            lcl: Number(spcStats.lcl) || 0,
+            avg: Number(spcStats.avg) || 0,
+            std: Number(spcStats.std) || 0,
+            max: Number(spcStats.max) || 0,
+            min: Number(spcStats.min) || 0,
+            cp: Number(spcStats.cp) || 0,
+            cpk: Number(spcStats.cpk) || 0
           };
 
           setSpcData({ data: chartData, stats: statisticsData });
