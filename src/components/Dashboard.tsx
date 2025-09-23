@@ -205,9 +205,7 @@ const Dashboard = () => {
             max,
             min,
             cp,
-            cpk,
-            machine_up,
-            machine_low
+            cpk
           `)
           .in('result_process_id', resultProcessIds);
 
@@ -223,37 +221,56 @@ const Dashboard = () => {
         // Usar la primera estadística encontrada (o puedes implementar lógica para seleccionar cual usar)
         const spcStats = spcStatsData[0];
         
-        const machineUp = Number(spcStats.machine_up) || 0;
-        const machineLow = Number(spcStats.machine_low) || 0;
+        // PASO 4: Obtener machine_up y machine_low por separado
+        const { data: machineData } = await supabase
+          .from('spc_statistics')
+          .select('machine_up, machine_low')
+          .eq('id', spcStats.id)
+          .single();
+        
+        const machineUp = Number(machineData?.machine_up) || 0;
+        const machineLow = Number(machineData?.machine_low) || 0;
+        
+        console.log('Machine limits:', { machineUp, machineLow });
 
         // Collect all process values for the chart
         const values = processData
           .map(d => d.value)
           .filter(v => v !== null && v !== undefined);
         
+        const spec = Number(spcStats.spec) || 0;
+        
+        // Calculate spec limits (límites de especificación)
+        const specUpper = spec + machineUp;  // Límite superior = nominal + machine_up
+        const specLower = spec - Math.abs(machineLow); // Límite inferior = nominal - machine_low (aseguramos que sea restado)
+
+        console.log('Spec limits calculation:', {
+          spec,
+          machineUp,
+          machineLow,
+          specUpper,
+          specLower
+        });
+
         const chartData = values.map((value, index) => ({
           point: index + 1,
           value,
           ucl: Number(spcStats.ucl) || 0,
           lcl: Number(spcStats.lcl) || 0,
           avg: Number(spcStats.avg) || 0,
-          spec: Number(spcStats.spec) || 0,
+          spec: spec,
           min: Number(spcStats.min) || 0,
           max: Number(spcStats.max) || 0,
+          specUpper: specUpper, // Límite superior de especificación
+          specLower: specLower, // Límite inferior de especificación
           date: processData[index]?.created_at ? format(new Date(processData[index].created_at), 'dd/MM/yyyy') : `Punto ${index + 1}`
         }));
-
-        const spec = Number(spcStats.spec) || 0;
-        
-        // Calculate spec limits
-        const specUpper = spec + machineUp;
-        const specLower = spec + machineLow;
         
         const statisticsData = {
           spec: spec,
-          specDisplay: `${spec} ${machineUp >= 0 ? '+' : ''}${machineUp.toFixed(3)}/${machineLow >= 0 ? '+' : ''}${machineLow.toFixed(3)}`,
-          specUpper: specUpper,
-          specLower: specLower,
+          specDisplay: `${spec} ${machineUp >= 0 ? '+' : ''}${machineUp.toFixed(3)}/${machineLow >= 0 ? '+' : ''}${Math.abs(machineLow).toFixed(3)}`,
+          specUpper: specUpper, // Límite superior = nominal + machine_up
+          specLower: specLower, // Límite inferior = nominal - machine_low
           ucl: Number(spcStats.ucl) || 0,
           lcl: Number(spcStats.lcl) || 0,
           avg: Number(spcStats.avg) || 0,
