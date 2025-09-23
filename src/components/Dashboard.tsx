@@ -207,7 +207,7 @@ const Dashboard = () => {
               min,
               cp,
               cpk,
-              processes!inner(process_number)
+              processes!inner(result_process_id)
             `)
             .eq('processes.process_number', selectedProcess)
             .single();
