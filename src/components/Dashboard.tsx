@@ -190,38 +190,47 @@ const Dashboard = () => {
           return;
         }
 
-        if (processData && processData.length > 0) {
-          // Get the first process record and its SPC statistics
-          const firstProcess = processData[0];
-          const spcStats = firstProcess.result_process?.spc_statistics?.[0];
-          
-          if (!spcStats) {
-            console.log('No SPC statistics found for this process');
+         if (processData && processData.length > 0) {
+          // Get SPC statistics using JOIN with processes table as requested
+          const { data: spcStatsData, error: spcError } = await supabase
+            .from('spc_statistics')
+            .select(`
+              id,
+              measurement_name,
+              spec,
+              sample_count,
+              ucl,
+              lcl,
+              avg,
+              std,
+              max,
+              min,
+              cp,
+              cpk,
+              processes!inner(process_number)
+            `)
+            .eq('processes.process_number', selectedProcess)
+            .single();
+
+          if (spcError || !spcStatsData) {
+            console.log('No SPC statistics found for this process:', spcError);
             setSpcData(null);
             return;
           }
 
-          // Get machine_up and machine_low from direct query  
-          const resultProcessId = firstProcess.result_process?.result_process_id;
+          const spcStats = spcStatsData;
           
-          let machineUp = 0;
-          let machineLow = 0;
+          // Get machine_up and machine_low by querying all columns to see what's available
+          const { data: rawSpcData } = await supabase
+            .from('spc_statistics')
+            .select('*')
+            .eq('id', spcStats.id)
+            .single();
           
-          // Try to get machine_up and machine_low using raw SQL
-          try {
-            const { data: rawSpcData } = await supabase
-              .from('spc_statistics')
-              .select('*')
-              .eq('result_process_id', resultProcessId)
-              .single();
-            
-            if (rawSpcData) {
-              machineUp = Number((rawSpcData as any).machine_up) || 0;
-              machineLow = Number((rawSpcData as any).machine_low) || 0;
-            }
-          } catch (error) {
-            console.log('Could not fetch machine_up/machine_low:', error);
-          }
+          console.log('Raw SPC data:', rawSpcData); // Debug log
+          
+          const machineUp = Number((rawSpcData as any)?.machine_up) || 0;
+          const machineLow = Number((rawSpcData as any)?.machine_low) || 0;
 
           // Collect all process values for the chart
           const values = processData
