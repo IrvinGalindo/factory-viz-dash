@@ -201,6 +201,28 @@ const Dashboard = () => {
             return;
           }
 
+          // Get machine_up and machine_low from direct query  
+          const resultProcessId = firstProcess.result_process?.result_process_id;
+          
+          let machineUp = 0;
+          let machineLow = 0;
+          
+          // Try to get machine_up and machine_low using raw SQL
+          try {
+            const { data: rawSpcData } = await supabase
+              .from('spc_statistics')
+              .select('*')
+              .eq('result_process_id', resultProcessId)
+              .single();
+            
+            if (rawSpcData) {
+              machineUp = Number((rawSpcData as any).machine_up) || 0;
+              machineLow = Number((rawSpcData as any).machine_low) || 0;
+            }
+          } catch (error) {
+            console.log('Could not fetch machine_up/machine_low:', error);
+          }
+
           // Collect all process values for the chart
           const values = processData
             .map(d => d.value)
@@ -218,8 +240,17 @@ const Dashboard = () => {
             date: processData[index]?.created_at ? format(new Date(processData[index].created_at), 'dd/MM/yyyy') : `Punto ${index + 1}`
           }));
 
+          const spec = Number(spcStats.spec) || 0;
+          
+          // Calculate spec limits
+          const specUpper = spec + machineUp;
+          const specLower = spec + machineLow;
+          
           const statisticsData = {
-            spec: Number(spcStats.spec) || 0,
+            spec: spec,
+            specDisplay: `${spec} ${machineUp >= 0 ? '+' : ''}${machineUp.toFixed(3)}/${machineLow >= 0 ? '+' : ''}${machineLow.toFixed(3)}`,
+            specUpper: specUpper,
+            specLower: specLower,
             ucl: Number(spcStats.ucl) || 0,
             lcl: Number(spcStats.lcl) || 0,
             avg: Number(spcStats.avg) || 0,
@@ -227,7 +258,9 @@ const Dashboard = () => {
             max: Number(spcStats.max) || 0,
             min: Number(spcStats.min) || 0,
             cp: Number(spcStats.cp) || 0,
-            cpk: Number(spcStats.cpk) || 0
+            cpk: Number(spcStats.cpk) || 0,
+            machineUp: machineUp,
+            machineLow: machineLow
           };
 
           setSpcData({ data: chartData, stats: statisticsData });

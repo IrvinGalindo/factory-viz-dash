@@ -14,6 +14,9 @@ interface SPCData {
 
 interface SPCStats {
   spec: number;
+  specDisplay: string;
+  specUpper: number;
+  specLower: number;
   ucl: number;
   lcl: number;
   avg: number;
@@ -22,6 +25,8 @@ interface SPCStats {
   min: number;
   cp: number;
   cpk: number;
+  machineUp: number;
+  machineLow: number;
 }
 
 interface SPCChartProps {
@@ -53,9 +58,9 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
+            <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded col-span-2">
               <div className="font-semibold text-yellow-800 dark:text-yellow-200">SPEC</div>
-              <div className="text-yellow-900 dark:text-yellow-100">{stats.spec.toFixed(3)}</div>
+              <div className="text-yellow-900 dark:text-yellow-100 text-xs">{stats.specDisplay}</div>
             </div>
             <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded">
               <div className="font-semibold text-red-800 dark:text-red-200">UCL</div>
@@ -158,6 +163,20 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
                 strokeWidth={2}
                 strokeDasharray="2 2"
                 label={{ value: "Min", position: "left" }}
+              />
+              
+              {/* Spec Upper and Lower Limits */}
+              <ReferenceLine 
+                y={stats.specUpper} 
+                stroke="#dc2626" 
+                strokeWidth={3}
+                label={{ value: "Spec Upper", position: "left" }}
+              />
+              <ReferenceLine 
+                y={stats.specLower} 
+                stroke="#dc2626" 
+                strokeWidth={3}
+                label={{ value: "Spec Lower", position: "left" }}
               />
               
               {/* Data Line */}
