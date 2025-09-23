@@ -212,6 +212,7 @@ const Dashboard = () => {
             .eq('processes.process_number', selectedProcess)
             .single();
 
+           console.log(selectedProcess)
           if (spcError || !spcStatsData) {
             console.log('No SPC statistics found for this process:', spcError);
             setSpcData(null);
