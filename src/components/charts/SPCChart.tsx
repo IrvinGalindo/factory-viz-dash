@@ -102,7 +102,7 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
       <Card className="lg:col-span-3">
         <CardContent className="p-0">
           <ResponsiveContainer width="100%" height={450}>
-            <LineChart data={data} margin={{ top: 30, right: 80, left: 30, bottom: 30 }}>
+            <LineChart data={data} margin={{ top: 30, right: 30, left: 30, bottom: 30 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               <XAxis 
                 dataKey="point" 
@@ -118,93 +118,51 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
                 contentStyle={{
                   backgroundColor: 'hsl(var(--background))',
                   border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
+                  borderRadius: '6px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
+                formatter={(value, name) => {
+                  if (name === "Valores Actuales") {
+                    return [`${value}`, name];
+                  }
+                  return [value, name];
+                }}
+                labelFormatter={(label) => `Punto: ${label}`}
               />
               <Legend />
               
-              {/* Spec Upper and Lower Limits - Más importantes */}
+              {/* Spec Upper and Lower Limits - Sin labels */}
               <ReferenceLine 
                 y={stats.specUpper} 
                 stroke="#dc2626" 
                 strokeWidth={3}
-                label={{ 
-                  value: `Spec Upper (${stats.specUpper.toFixed(3)})`, 
-                  position: "topRight",
-                  style: { 
-                    fill: '#dc2626', 
-                    fontSize: '13px', 
-                    fontWeight: 'bold',
-                    textAnchor: 'end'
-                  }
-                }}
               />
               <ReferenceLine 
                 y={stats.specLower} 
                 stroke="#dc2626" 
                 strokeWidth={3}
-                label={{ 
-                  value: `Spec Lower (${stats.specLower.toFixed(3)})`, 
-                  position: "bottomRight",
-                  style: { 
-                    fill: '#dc2626', 
-                    fontSize: '13px', 
-                    fontWeight: 'bold',
-                    textAnchor: 'end'
-                  }
-                }}
               />
               
-              {/* Control Limits */}
+              {/* Control Limits - Sin labels */}
               <ReferenceLine 
                 y={stats.ucl} 
                 stroke="#ec4899" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
-                label={{ 
-                  value: `UCL (${stats.ucl.toFixed(3)})`, 
-                  position: "topLeft",
-                  style: { 
-                    fill: '#ec4899', 
-                    fontSize: '12px', 
-                    fontWeight: 'bold',
-                    textAnchor: 'start'
-                  }
-                }}
               />
               <ReferenceLine 
                 y={stats.lcl} 
                 stroke="#ec4899" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
-                label={{ 
-                  value: `LCL (${stats.lcl.toFixed(3)})`, 
-                  position: "bottomLeft",
-                  style: { 
-                    fill: '#ec4899', 
-                    fontSize: '12px', 
-                    fontWeight: 'bold',
-                    textAnchor: 'start'
-                  }
-                }}
               />
               
-              {/* Average */}
+              {/* Average - Sin labels */}
               <ReferenceLine 
                 y={stats.avg} 
                 stroke="#3b82f6" 
                 strokeWidth={2}
                 strokeDasharray="8 4"
-                label={{ 
-                  value: `Promedio (${stats.avg.toFixed(3)})`, 
-                  position: "left",
-                  style: { 
-                    fill: '#3b82f6', 
-                    fontSize: '12px', 
-                    fontWeight: 'bold',
-                    textAnchor: 'start'
-                  }
-                }}
               />
               
               {/* Data Line */}
@@ -220,6 +178,36 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
+        
+        {/* Leyenda de líneas debajo del gráfico */}
+        <div className="px-4 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-red-600"></div>
+              <span>Spec Upper: {stats.specUpper.toFixed(3)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-red-600"></div>
+              <span>Spec Lower: {stats.specLower.toFixed(3)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-pink-500 border-dashed border-t-2 border-pink-500" style={{borderStyle: 'dashed'}}></div>
+              <span>UCL: {stats.ucl.toFixed(3)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-pink-500 border-dashed border-t-2 border-pink-500" style={{borderStyle: 'dashed'}}></div>
+              <span>LCL: {stats.lcl.toFixed(3)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-blue-500" style={{backgroundImage: 'linear-gradient(to right, #3b82f6 50%, transparent 50%)', backgroundSize: '8px 2px'}}></div>
+              <span>Promedio: {stats.avg.toFixed(3)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-green-500"></div>
+              <span className="text-green-600 font-medium">Valores Medidos</span>
+            </div>
+          </div>
+        </div>
       </Card>
     </div>
   );
