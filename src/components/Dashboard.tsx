@@ -39,7 +39,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchMachines = async () => {
       try {
-        console.log('Iniciando conexión a Supabase...');
+        console.log('🚀 Iniciando conexión a Supabase...');
         
         // Verificar si supabase está definido
         if (!supabase) {
@@ -54,32 +54,32 @@ const Dashboard = () => {
           .select('machine_name')
           .order('machine_name');
         
-        console.log('Respuesta de Supabase:');
+        console.log('📊 Respuesta de Supabase:');
         console.log('Data:', data);
         console.log('Error:', error);
         
         if (error) {
-          console.error('Error de Supabase:', error);
+          console.error('❌ Error de Supabase:', error);
           setError(`Error de base de datos: ${error.message}`);
           return;
         }
         
         if (!data) {
-          console.warn('No se recibieron datos de Supabase');
+          console.warn('⚠️ No se recibieron datos de Supabase');
           setError('No se recibieron datos de la base de datos');
           return;
         }
         
-        console.log(`Se encontraron ${data.length} máquinas`);
+        console.log(`✅ Se encontraron ${data.length} máquinas`);
         setMachines(data);
         
         if (data.length > 0) {
-          console.log('Seleccionando primera máquina:', data[0].machine_name);
+          console.log('🎯 Seleccionando primera máquina:', data[0].machine_name);
           setSelectedMachine(data[0].machine_name);
         }
         
       } catch (error) {
-        console.error('Error en fetchMachines:', error);
+        console.error('💥 Error en fetchMachines:', error);
         setError(`Error de conexión: ${error.message}`);
       } finally {
         setLoading(false);
@@ -99,6 +99,8 @@ const Dashboard = () => {
       }
 
       try {
+        console.log('🔍 Buscando procesos para máquina:', selectedMachine);
+        
         const { data, error } = await supabase
           .from('processes')
           .select(`
@@ -111,25 +113,28 @@ const Dashboard = () => {
           .eq('result_process.machines.machine_name', selectedMachine);
 
         if (error) {
-          console.error('Error fetching processes:', error);
+          console.error('❌ Error fetching processes:', error);
           return;
         }
 
         const uniqueProcesses = [...new Set(data?.map(p => p.process_number))].filter(Boolean);
+        console.log('📋 Procesos encontrados:', uniqueProcesses);
+        
         setProcesses(uniqueProcesses);
         
         if (uniqueProcesses.length > 0) {
+          console.log('🎯 Seleccionando primer proceso:', uniqueProcesses[0]);
           setSelectedProcess(uniqueProcesses[0]);
         }
       } catch (error) {
-        console.error('Error in fetchProcesses:', error);
+        console.error('💥 Error in fetchProcesses:', error);
       }
     };
 
     fetchProcesses();
   }, [selectedMachine]);
 
-  // Fetch SPC data when machine and process are selected
+  // 🚀 FIXED: Fetch SPC data when machine and process are selected
   useEffect(() => {
     const fetchSPCData = async () => {
       if (!selectedMachine || !selectedProcess) {
@@ -143,10 +148,17 @@ const Dashboard = () => {
         const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
         const toDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
 
-        // PASO 1: Obtener los result_process_id que coincidan con machine y process
+        console.log('🎯 Buscando datos SPC para:', { 
+          machine: selectedMachine, 
+          process: selectedProcess,
+          dateRange: { fromDate, toDate }
+        });
+
+        // PASO 1: Obtener SOLO los datos de procesos que coincidan exactamente
         let processQuery = supabase
           .from('processes')
           .select(`
+            process_id,
             result_process_id,
             process_number,
             value,
@@ -172,24 +184,26 @@ const Dashboard = () => {
         const { data: processData, error: processError } = await processQuery;
 
         if (processError) {
-          console.error('Error fetching process data:', processError);
+          console.error('❌ Error fetching process data:', processError);
           setSpcData(null);
           return;
         }
 
         if (!processData || processData.length === 0) {
-          console.log('No process data found');
+          console.log('⚠️ No process data found for:', { selectedMachine, selectedProcess });
           setSpcData(null);
           return;
         }
 
-        // PASO 2: Obtener los result_process_id únicos
+        console.log('✅ Process data found:', processData.length, 'records');
+
+        // PASO 2: Obtener los result_process_id únicos del proceso específico
         const resultProcessIds = [...new Set(processData.map(p => p.result_process_id))];
         
-        console.log('Result Process IDs found:', resultProcessIds);
-        console.log('Selected Process:', selectedProcess);
+        console.log('🔍 Result Process IDs for this specific process:', resultProcessIds);
 
-        // PASO 3: Buscar estadísticas SPC para cualquiera de estos result_process_id
+        // PASO 3: Query más específico para SPC statistics
+        // Vamos a buscar todas las estadísticas y luego filtrar la que mejor coincida
         const { data: spcStatsData, error: spcError } = await supabase
           .from('spc_statistics')
           .select(`
@@ -205,46 +219,60 @@ const Dashboard = () => {
             max,
             min,
             cp,
-            cpk
+            cpk,
+            machine_up,
+            machine_low
           `)
-          .in('result_process_id', resultProcessIds);
+          .in('result_process_id', resultProcessIds)
+          .order('created_at', { ascending: false }); // Ordenar por más reciente
 
-        console.log('SPC Stats Data:', spcStatsData);
-        console.log('SPC Error:', spcError);
+        console.log('📊 SPC Stats Data found:', spcStatsData?.length || 0, 'records');
+        console.log('SPC Data details:', spcStatsData);
 
         if (spcError || !spcStatsData || spcStatsData.length === 0) {
-          console.log('No SPC statistics found for these processes:', spcError);
+          console.log('❌ No SPC statistics found for process:', selectedProcess, 'Error:', spcError);
           setSpcData(null);
           return;
         }
 
-        // Usar la primera estadística encontrada (o puedes implementar lógica para seleccionar cual usar)
-        const spcStats = spcStatsData[0];
-        
-        // PASO 4: Obtener machine_up y machine_low por separado
-        const { data: machineData } = await supabase
-          .from('spc_statistics')
-          .select('machine_up, machine_low')
-          .eq('id', spcStats.id)
-          .single();
-        
-        const machineUp = Number(machineData?.machine_up) || 0;
-        const machineLow = Number(machineData?.machine_low) || 0;
-        
-        console.log('Machine limits:', { machineUp, machineLow });
+        // PASO 4: Seleccionar la estadística más relevante
+        // Prioridad: 1) measurement_name que coincida con el proceso, 2) la más reciente
+        let selectedSpcStats = spcStatsData.find(stat => 
+          stat.measurement_name && stat.measurement_name.includes(selectedProcess)
+        ) || spcStatsData[0]; // Fallback a la más reciente
 
-        // Collect all process values for the chart
-        const values = processData
-          .map(d => d.value)
-          .filter(v => v !== null && v !== undefined);
+        console.log('🎯 Selected SPC Stats:', selectedSpcStats);
         
-        const spec = Number(spcStats.spec) || 0;
+        const machineUp = Number(selectedSpcStats.machine_up) || 0;
+        const machineLow = Number(selectedSpcStats.machine_low) || 0;
+        
+        console.log('🎚️ Machine limits:', { machineUp, machineLow });
+
+        // PASO 5: Filtrar solo los valores del proceso específico
+        const processValues = processData
+          .filter(d => d.process_number === selectedProcess.toString()) // Extra seguridad
+          .map(d => ({
+            value: d.value,
+            created_at: d.created_at,
+            result_process_id: d.result_process_id
+          }))
+          .filter(d => d.value !== null && d.value !== undefined);
+
+        console.log('📈 Process values for chart:', processValues.length, 'points');
+
+        if (processValues.length === 0) {
+          console.log('⚠️ No valid values found for process:', selectedProcess);
+          setSpcData(null);
+          return;
+        }
+        
+        const spec = Number(selectedSpcStats.spec) || 0;
         
         // Calculate spec limits (límites de especificación)
         const specUpper = spec + machineUp;  // Límite superior = nominal + machine_up
-        const specLower = spec - Math.abs(machineLow); // Límite inferior = nominal - machine_low (aseguramos que sea restado)
+        const specLower = spec - Math.abs(machineLow); // Límite inferior = nominal - machine_low
 
-        console.log('Spec limits calculation:', {
+        console.log('📏 Spec limits calculation:', {
           spec,
           machineUp,
           machineLow,
@@ -252,41 +280,48 @@ const Dashboard = () => {
           specLower
         });
 
-        const chartData = values.map((value, index) => ({
+        // PASO 6: Crear los datos para el chart
+        const chartData = processValues.map((item, index) => ({
           point: index + 1,
-          value,
-          ucl: Number(spcStats.ucl) || 0,
-          lcl: Number(spcStats.lcl) || 0,
-          avg: Number(spcStats.avg) || 0,
+          value: item.value,
+          ucl: Number(selectedSpcStats.ucl) || 0,
+          lcl: Number(selectedSpcStats.lcl) || 0,
+          avg: Number(selectedSpcStats.avg) || 0,
           spec: spec,
-          min: Number(spcStats.min) || 0,
-          max: Number(spcStats.max) || 0,
-          specUpper: specUpper, // Límite superior de especificación
-          specLower: specLower, // Límite inferior de especificación
-          date: processData[index]?.created_at ? format(new Date(processData[index].created_at), 'dd/MM/yyyy') : `Punto ${index + 1}`
+          min: Number(selectedSpcStats.min) || 0,
+          max: Number(selectedSpcStats.max) || 0,
+          specUpper: specUpper,
+          specLower: specLower,
+          date: item.created_at ? format(new Date(item.created_at), 'dd/MM/yyyy HH:mm') : `Punto ${index + 1}`,
+          result_process_id: item.result_process_id // Para debugging
         }));
         
         const statisticsData = {
           spec: spec,
           specDisplay: `${spec} ${machineUp >= 0 ? '+' : ''}${machineUp.toFixed(3)}/${machineLow >= 0 ? '+' : ''}${Math.abs(machineLow).toFixed(3)}`,
-          specUpper: specUpper, // Límite superior = nominal + machine_up
-          specLower: specLower, // Límite inferior = nominal - machine_low
-          ucl: Number(spcStats.ucl) || 0,
-          lcl: Number(spcStats.lcl) || 0,
-          avg: Number(spcStats.avg) || 0,
-          std: Number(spcStats.std) || 0,
-          max: Number(spcStats.max) || 0,
-          min: Number(spcStats.min) || 0,
-          cp: Number(spcStats.cp) || 0,
-          cpk: Number(spcStats.cpk) || 0,
+          specUpper: specUpper,
+          specLower: specLower,
+          ucl: Number(selectedSpcStats.ucl) || 0,
+          lcl: Number(selectedSpcStats.lcl) || 0,
+          avg: Number(selectedSpcStats.avg) || 0,
+          std: Number(selectedSpcStats.std) || 0,
+          max: Number(selectedSpcStats.max) || 0,
+          min: Number(selectedSpcStats.min) || 0,
+          cp: Number(selectedSpcStats.cp) || 0,
+          cpk: Number(selectedSpcStats.cpk) || 0,
           machineUp: machineUp,
-          machineLow: machineLow
+          machineLow: machineLow,
+          sampleCount: processValues.length,
+          measurementName: selectedSpcStats.measurement_name
         };
+
+        console.log('🎊 Final chart data:', chartData.length, 'points');
+        console.log('📊 Final statistics:', statisticsData);
 
         setSpcData({ data: chartData, stats: statisticsData });
 
       } catch (error) {
-        console.error('Error in fetchSPCData:', error);
+        console.error('💥 Error in fetchSPCData:', error);
         setSpcData(null);
       } finally {
         setSpcLoading(false);
@@ -298,17 +333,17 @@ const Dashboard = () => {
 
   // Función para probar la conexión manualmente
   const testConnection = async () => {
-    console.log('Probando conexión manual...');
+    console.log('🧪 Probando conexión manual...');
     try {
       const { data, error } = await supabase
         .from('machines')
         .select('*')
         .limit(1);
       
-      console.log('Prueba de conexión - Data:', data);
-      console.log('Prueba de conexión - Error:', error);
+      console.log('✅ Prueba de conexión - Data:', data);
+      console.log('Error:', error);
     } catch (err) {
-      console.error('Error en prueba de conexión:', err);
+      console.error('💥 Error en prueba de conexión:', err);
     }
   };
   
@@ -562,6 +597,11 @@ const Dashboard = () => {
                           ({format(dateRange.from, "dd/MM/yyyy", { locale: es })} - {format(dateRange.to, "dd/MM/yyyy", { locale: es })})
                         </span>
                       )}
+                      {spcData?.stats?.measurementName && (
+                        <span className="ml-2 text-xs text-blue-600">
+                          | Medición: {spcData.stats.measurementName}
+                        </span>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="w-60">
@@ -572,8 +612,10 @@ const Dashboard = () => {
                           role="combobox"
                           aria-expanded={processOpen}
                           className="w-full justify-between"
+                          disabled={processes.length === 0}
                         >
-                          {selectedProcess ? `Proceso ${selectedProcess}` : "Seleccionar proceso..."}
+                          {selectedProcess ? `Proceso ${selectedProcess}` : 
+                           processes.length === 0 ? "Cargando procesos..." : "Seleccionar proceso..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
@@ -609,7 +651,10 @@ const Dashboard = () => {
               <CardContent>
                 {spcLoading ? (
                   <div className="flex items-center justify-center h-96">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">Cargando datos SPC...</p>
+                    </div>
                   </div>
                 ) : processes.length === 0 ? (
                   <div className="flex items-center justify-center h-96 text-muted-foreground">
@@ -619,10 +664,40 @@ const Dashboard = () => {
                     </div>
                   </div>
                 ) : spcData && spcData.data && spcData.stats ? (
-                  <SPCChart data={spcData.data} stats={spcData.stats} />
+                  <div className="space-y-4">
+                    <SPCChart data={spcData.data} stats={spcData.stats} />
+                    {/* Info adicional */}
+                    <div className="grid grid-cols-4 gap-4 text-sm">
+                      <div className="bg-muted/50 p-2 rounded">
+                        <div className="font-semibold">Puntos de datos:</div>
+                        <div>{spcData.stats.sampleCount}</div>
+                      </div>
+                      <div className="bg-muted/50 p-2 rounded">
+                        <div className="font-semibold">CP:</div>
+                        <div>{spcData.stats.cp.toFixed(3)}</div>
+                      </div>
+                      <div className="bg-muted/50 p-2 rounded">
+                        <div className="font-semibold">CPK:</div>
+                        <div>{spcData.stats.cpk.toFixed(3)}</div>
+                      </div>
+                      <div className="bg-muted/50 p-2 rounded">
+                        <div className="font-semibold">Desv. Std:</div>
+                        <div>{spcData.stats.std.toFixed(3)}</div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-96 text-muted-foreground">
-                    {selectedProcess ? 'No hay datos disponibles para este proceso' : 'Selecciona un proceso para ver el gráfico SPC'}
+                    <div className="text-center">
+                      <div className="text-lg font-medium mb-2">
+                        {selectedProcess ? 'No hay datos SPC disponibles' : 'Selecciona un proceso'}
+                      </div>
+                      <div className="text-sm">
+                        {selectedProcess 
+                          ? 'No se encontraron estadísticas SPC para este proceso en el rango de fechas seleccionado' 
+                          : 'Selecciona un proceso para ver el gráfico SPC'}
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
