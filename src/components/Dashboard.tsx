@@ -51,8 +51,8 @@ const Dashboard = () => {
         // Hacer la consulta
         const { data, error } = await supabase
           .from('machines')
-          .select('machine_name')
-          .order('machine_name');
+          .select('line')
+          .order('line');
         
         console.log('📊 Respuesta de Supabase:');
         console.log('Data:', data);
@@ -74,8 +74,8 @@ const Dashboard = () => {
         setMachines(data);
         
         if (data.length > 0) {
-          console.log('🎯 Seleccionando primera máquina:', data[0].machine_name);
-          setSelectedMachine(data[0].machine_name);
+          console.log('🎯 Seleccionando primera máquina:', data[0].line);
+          setSelectedMachine(data[0].line);
         }
         
       } catch (error) {
@@ -107,10 +107,10 @@ const Dashboard = () => {
             process_number,
             result_process!inner(
               machine_id,
-              machines!inner(machine_name)
+              machines!inner(line)
             )
           `)
-          .eq('result_process.machines.machine_name', selectedMachine);
+          .eq('result_process.machines.line', selectedMachine);
 
         if (error) {
           console.error('❌ Error fetching processes:', error);
@@ -167,10 +167,10 @@ const Dashboard = () => {
               result_process_id,
               date,
               machine_id,
-              machines!inner(machine_name)
+              machines!inner(line)
             )
           `)
-          .eq('result_process.machines.machine_name', selectedMachine)
+          .eq('result_process.machines.line', selectedMachine)
           .eq('process_number', selectedProcess.toString());
 
         // Apply date filters if they exist
@@ -558,19 +558,19 @@ const Dashboard = () => {
                     <CommandGroup>
                       {machines.map((machine, index) => (
                         <CommandItem
-                          key={`${machine.machine_name}-${index}`}
-                          value={machine.machine_name.toLowerCase()}
+                          key={`${machine.line}-${index}`}
+                          value={machine.line.toLowerCase()}
                           onSelect={() => {
-                            setSelectedMachine(machine.machine_name);
+                            setSelectedMachine(machine.line);
                             setMachineOpen(false);
                           }}
                         >
                           <Check
                             className={`mr-2 h-4 w-4 ${
-                              selectedMachine === machine.machine_name ? "opacity-100" : "opacity-0"
+                              selectedMachine === machine.line ? "opacity-100" : "opacity-0"
                             }`}
                           />
-                          {machine.machine_name}
+                          {machine.line}
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -788,3 +788,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
