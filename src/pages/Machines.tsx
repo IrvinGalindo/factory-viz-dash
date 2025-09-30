@@ -11,8 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Machine {
   machine_id: string;
-  machine_name: string | null;
-  qr_code: string | null;
+  cmm_name: string | null;
+  line: string | null;
   process: string | null;
   created_at: string;
 }
@@ -26,8 +26,8 @@ const Machines = () => {
   const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
-    machine_name: '',
-    qr_code: '',
+    cmm_name: '',
+    line: '',
     process: ''
   });
 
@@ -58,10 +58,10 @@ const Machines = () => {
   };
 
   const handleCreateMachine = async () => {
-    if (!formData.machine_name) {
+    if (!formData.cmm_name || !formData.line || !formData.process) {
       toast({
         title: "Error",
-        description: "El nombre de la máquina es obligatorio",
+        description: "Todos los campos son obligatorios",
         variant: "destructive"
       });
       return;
@@ -71,21 +71,21 @@ const Machines = () => {
       const { data, error } = await supabase
         .from('machines')
         .insert([{
-          machine_name: formData.machine_name,
-          qr_code: formData.qr_code || null,
-          process: formData.process || null
+          cmm_name: formData.cmm_name,
+          line: formData.line,
+          process: formData.process
         }])
         .select();
 
       if (error) throw error;
 
       setMachines([...machines, ...data]);
-      setFormData({ machine_name: '', qr_code: '', process: '' });
+      setFormData({ cmm_name: '', line: '', process: '' });
       setIsCreateDialogOpen(false);
 
       toast({
         title: "Máquina creada",
-        description: `Se ha creado la máquina ${formData.machine_name} exitosamente`
+        description: `Se ha creado la máquina ${formData.cmm_name} exitosamente`
       });
     } catch (error) {
       console.error('Error creating machine:', error);
@@ -98,10 +98,10 @@ const Machines = () => {
   };
 
   const handleEditMachine = async () => {
-    if (!editingMachine || !formData.machine_name) {
+    if (!editingMachine || !formData.cmm_name || !formData.line || !formData.process) {
       toast({
         title: "Error",
-        description: "El nombre de la máquina es obligatorio",
+        description: "Todos los campos son obligatorios",
         variant: "destructive"
       });
       return;
@@ -111,9 +111,9 @@ const Machines = () => {
       const { data, error } = await supabase
         .from('machines')
         .update({
-          machine_name: formData.machine_name,
-          qr_code: formData.qr_code || null,
-          process: formData.process || null
+          cmm_name: formData.cmm_name,
+          line: formData.line,
+          process: formData.process
         })
         .eq('machine_id', editingMachine.machine_id)
         .select();
@@ -124,7 +124,7 @@ const Machines = () => {
         machine.machine_id === editingMachine.machine_id ? data[0] : machine
       ));
       
-      setFormData({ machine_name: '', qr_code: '', process: '' });
+      setFormData({ cmm_name: '', line: '', process: '' });
       setEditingMachine(null);
       setIsEditDialogOpen(false);
 
@@ -169,15 +169,15 @@ const Machines = () => {
   const openEditDialog = (machine: Machine) => {
     setEditingMachine(machine);
     setFormData({
-      machine_name: machine.machine_name || '',
-      qr_code: machine.qr_code || '',
+      cmm_name: machine.cmm_name || '',
+      line: machine.line || '',
       process: machine.process || ''
     });
     setIsEditDialogOpen(true);
   };
 
   const resetForm = () => {
-    setFormData({ machine_name: '', qr_code: '', process: '' });
+    setFormData({ cmm_name: '', line: '', process: '' });
     setEditingMachine(null);
   };
 
@@ -218,32 +218,35 @@ const Machines = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="machine_name">Nombre de la Máquina *</Label>
+                  <Label htmlFor="cmm_name">CMM *</Label>
                   <Input
-                    id="machine_name"
-                    value={formData.machine_name}
-                    onChange={(e) => setFormData({ ...formData, machine_name: e.target.value })}
-                    placeholder="Ej: Línea de Producción A"
+                    id="cmm_name"
+                    value={formData.cmm_name}
+                    onChange={(e) => setFormData({ ...formData, cmm_name: e.target.value })}
+                    placeholder="Ej: CMM-001"
+                    required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="qr_code">Código QR</Label>
+                  <Label htmlFor="line">Línea *</Label>
                   <Input
-                    id="qr_code"
-                    value={formData.qr_code}
-                    onChange={(e) => setFormData({ ...formData, qr_code: e.target.value })}
-                    placeholder="Ej: QR001"
+                    id="line"
+                    value={formData.line}
+                    onChange={(e) => setFormData({ ...formData, line: e.target.value })}
+                    placeholder="Ej: LINE-A"
+                    required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="process">Proceso</Label>
+                  <Label htmlFor="process">Proceso *</Label>
                   <Input
                     id="process"
                     value={formData.process}
                     onChange={(e) => setFormData({ ...formData, process: e.target.value })}
                     placeholder="Ej: Ensamblaje"
+                    required
                   />
                 </div>
 
@@ -278,32 +281,35 @@ const Machines = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_machine_name">Nombre de la Máquina *</Label>
+                <Label htmlFor="edit_cmm_name">CMM *</Label>
                 <Input
-                  id="edit_machine_name"
-                  value={formData.machine_name}
-                  onChange={(e) => setFormData({ ...formData, machine_name: e.target.value })}
-                  placeholder="Ej: Línea de Producción A"
+                  id="edit_cmm_name"
+                  value={formData.cmm_name}
+                  onChange={(e) => setFormData({ ...formData, cmm_name: e.target.value })}
+                  placeholder="Ej: CMM-001"
+                  required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit_qr_code">Código QR</Label>
+                <Label htmlFor="edit_line">Línea *</Label>
                 <Input
-                  id="edit_qr_code"
-                  value={formData.qr_code}
-                  onChange={(e) => setFormData({ ...formData, qr_code: e.target.value })}
-                  placeholder="Ej: QR001"
+                  id="edit_line"
+                  value={formData.line}
+                  onChange={(e) => setFormData({ ...formData, line: e.target.value })}
+                  placeholder="Ej: LINE-A"
+                  required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit_process">Proceso</Label>
+                <Label htmlFor="edit_process">Proceso *</Label>
                 <Input
                   id="edit_process"
                   value={formData.process}
                   onChange={(e) => setFormData({ ...formData, process: e.target.value })}
                   placeholder="Ej: Ensamblaje"
+                  required
                 />
               </div>
 
@@ -340,12 +346,12 @@ const Machines = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Con Código QR</CardTitle>
+              <CardTitle className="text-sm font-medium">Con Línea</CardTitle>
               <QrCode className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {machines.filter(m => m.qr_code).length}
+                {machines.filter(m => m.line).length}
               </div>
             </CardContent>
           </Card>
@@ -380,8 +386,8 @@ const Machines = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Código QR</TableHead>
+                    <TableHead>CMM</TableHead>
+                    <TableHead>Línea</TableHead>
                     <TableHead>Proceso</TableHead>
                     <TableHead>Fecha de Creación</TableHead>
                     <TableHead>Acciones</TableHead>
@@ -391,10 +397,10 @@ const Machines = () => {
                   {machines.map((machine) => (
                     <TableRow key={machine.machine_id}>
                       <TableCell className="font-medium">
-                        {machine.machine_name || 'Sin nombre'}
+                        {machine.cmm_name || 'Sin nombre'}
                       </TableCell>
                       <TableCell>
-                        {machine.qr_code || '-'}
+                        {machine.line || '-'}
                       </TableCell>
                       <TableCell>
                         {machine.process || '-'}
