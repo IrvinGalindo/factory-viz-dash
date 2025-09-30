@@ -52,7 +52,7 @@ const Dashboard = () => {
         const { data, error } = await supabase
           .from('machines')
           .select('cmm_name, line')
-          .order('cmm_name') as any;
+          .order('line') as any;
         
         console.log('📊 Respuesta de Supabase:');
         console.log('Data:', data);
@@ -74,8 +74,8 @@ const Dashboard = () => {
         setMachines(data);
         
         if (data.length > 0) {
-          console.log('🎯 Seleccionando primera máquina:', data[0].cmm_name);
-          setSelectedMachine(data[0].cmm_name);
+          console.log('🎯 Seleccionando primera máquina:', data[0].line);
+          setSelectedMachine(data[0].line);
         }
         
       } catch (error) {
@@ -107,10 +107,10 @@ const Dashboard = () => {
             process_number,
             result_process!inner(
               machine_id,
-              machines!inner(cmm_name)
+              machines!inner(line)
             )
           `)
-          .eq('result_process.machines.cmm_name', selectedMachine) as any;
+          .eq('result_process.machines.line', selectedMachine) as any;
 
         if (error) {
           console.error('❌ Error fetching processes:', error);
@@ -167,10 +167,10 @@ const Dashboard = () => {
               result_process_id,
               date,
               machine_id,
-              machines!inner(cmm_name)
+              machines!inner(line)
             )
           `)
-          .eq('result_process.machines.cmm_name', selectedMachine)
+          .eq('result_process.machines.line', selectedMachine)
           .eq('process_number', selectedProcess.toString());
 
         // Apply date filters if they exist
