@@ -25,7 +25,7 @@ export type Database = {
           inspection_date: string | null
           inspector_name: string | null
           machine_id: string | null
-          machine_name: string | null
+          cmm_name: string | null
           original_filename: string | null
           processed_at: string | null
           processing_status: string | null
@@ -44,7 +44,7 @@ export type Database = {
           inspection_date?: string | null
           inspector_name?: string | null
           machine_id?: string | null
-          machine_name?: string | null
+          cmm_name?: string | null
           original_filename?: string | null
           processed_at?: string | null
           processing_status?: string | null
@@ -63,7 +63,7 @@ export type Database = {
           inspection_date?: string | null
           inspector_name?: string | null
           machine_id?: string | null
-          machine_name?: string | null
+          cmm_name?: string | null
           original_filename?: string | null
           processed_at?: string | null
           processing_status?: string | null
@@ -80,7 +80,7 @@ export type Database = {
           id: number
           inspector: string | null
           line_values: Json | null
-          machine_name: string
+          cmm_name: string
           turn: string | null
         }
         Insert: {
@@ -88,7 +88,7 @@ export type Database = {
           id?: number
           inspector?: string | null
           line_values?: Json | null
-          machine_name: string
+          cmm_name: string
           turn?: string | null
         }
         Update: {
@@ -96,7 +96,7 @@ export type Database = {
           id?: number
           inspector?: string | null
           line_values?: Json | null
-          machine_name?: string
+          cmm_name?: string
           turn?: string | null
         }
         Relationships: []
@@ -105,21 +105,21 @@ export type Database = {
         Row: {
           created_at: string
           machine_id: string
-          machine_name: string | null
+          cmm_name: string | null
           process: string | null
           qr_code: string | null
         }
         Insert: {
           created_at?: string
           machine_id?: string
-          machine_name?: string | null
+          cmm_name?: string | null
           process?: string | null
           qr_code?: string | null
         }
         Update: {
           created_at?: string
           machine_id?: string
-          machine_name?: string | null
+          cmm_name?: string | null
           process?: string | null
           qr_code?: string | null
         }
@@ -325,7 +325,7 @@ export type Database = {
           p_column_type: string
           p_date: string
           p_item: string
-          p_machine_name: string
+          p_cmm_name: string
           p_process_number: number
           p_shift: string
         }
