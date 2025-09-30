@@ -19,12 +19,12 @@ import { es } from 'date-fns/locale';
 
 const Dashboard = () => {
   const [selectedMachine, setSelectedMachine] = useState('');
-  const [machines, setMachines] = useState([]);
+  const [machines, setMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProcess, setSelectedProcess] = useState('');
   const [processes, setProcesses] = useState([]);
-  const [spcData, setSpcData] = useState(null);
+  const [spcData, setSpcData] = useState<any>(null);
   const [spcLoading, setSpcLoading] = useState(false);
   const [machineOpen, setMachineOpen] = useState(false);
   const [processOpen, setProcessOpen] = useState(false);
@@ -51,8 +51,8 @@ const Dashboard = () => {
         // Hacer la consulta
         const { data, error } = await supabase
           .from('machines')
-          .select('line')
-          .order('line');
+          .select('cmm_name, line')
+          .order('cmm_name') as any;
         
         console.log('📊 Respuesta de Supabase:');
         console.log('Data:', data);
@@ -74,8 +74,8 @@ const Dashboard = () => {
         setMachines(data);
         
         if (data.length > 0) {
-          console.log('🎯 Seleccionando primera máquina:', data[0].line);
-          setSelectedMachine(data[0].line);
+          console.log('🎯 Seleccionando primera máquina:', data[0].cmm_name);
+          setSelectedMachine(data[0].cmm_name);
         }
         
       } catch (error) {
@@ -107,24 +107,24 @@ const Dashboard = () => {
             process_number,
             result_process!inner(
               machine_id,
-              machines!inner(line)
+              machines!inner(cmm_name)
             )
           `)
-          .eq('result_process.machines.line', selectedMachine);
+          .eq('result_process.machines.cmm_name', selectedMachine) as any;
 
         if (error) {
           console.error('❌ Error fetching processes:', error);
           return;
         }
 
-        const uniqueProcesses = [...new Set(data?.map(p => p.process_number))].filter(Boolean);
+        const uniqueProcesses = [...new Set(data?.map((p: any) => p.process_number))].filter(Boolean);
         console.log('📋 Procesos encontrados:', uniqueProcesses);
         
-        setProcesses(uniqueProcesses);
+        setProcesses(uniqueProcesses as any);
         
         if (uniqueProcesses.length > 0) {
           console.log('🎯 Seleccionando primer proceso:', uniqueProcesses[0]);
-          setSelectedProcess(uniqueProcesses[0]);
+          setSelectedProcess(uniqueProcesses[0] as string);
         }
       } catch (error) {
         console.error('💥 Error in fetchProcesses:', error);
@@ -167,10 +167,10 @@ const Dashboard = () => {
               result_process_id,
               date,
               machine_id,
-              machines!inner(line)
+              machines!inner(cmm_name)
             )
           `)
-          .eq('result_process.machines.line', selectedMachine)
+          .eq('result_process.machines.cmm_name', selectedMachine)
           .eq('process_number', selectedProcess.toString());
 
         // Apply date filters if they exist
@@ -237,14 +237,14 @@ const Dashboard = () => {
 
         // PASO 4: Seleccionar la estadística más relevante
         // Prioridad: 1) measurement_name que coincida con el proceso, 2) la más reciente
-        let selectedSpcStats = spcStatsData.find(stat => 
+        let selectedSpcStats: any = spcStatsData.find((stat: any) => 
           stat.measurement_name && stat.measurement_name.includes(selectedProcess)
         ) || spcStatsData[0]; // Fallback a la más reciente
 
         console.log('🎯 Selected SPC Stats:', selectedSpcStats);
         
-        const machineUp = Number(selectedSpcStats.machine_up) || 0;
-        const machineLow = Number(selectedSpcStats.machine_low) || 0;
+        const machineUp = Number(selectedSpcStats?.machine_up) || 0;
+        const machineLow = Number(selectedSpcStats?.machine_low) || 0;
         
         console.log('🎚️ Machine limits:', { machineUp, machineLow });
 
@@ -266,7 +266,7 @@ const Dashboard = () => {
           return;
         }
         
-        const spec = Number(selectedSpcStats.spec) || 0;
+        const spec = Number(selectedSpcStats?.spec) || 0;
         
         // Calculate spec limits (límites de especificación)
         const specUpper = spec + machineUp;  // Límite superior = nominal + machine_up
@@ -284,12 +284,12 @@ const Dashboard = () => {
         const chartData = processValues.map((item, index) => ({
           point: index + 1,
           value: item.value,
-          ucl: Number(selectedSpcStats.ucl) || 0,
-          lcl: Number(selectedSpcStats.lcl) || 0,
-          avg: Number(selectedSpcStats.avg) || 0,
+          ucl: Number(selectedSpcStats?.ucl) || 0,
+          lcl: Number(selectedSpcStats?.lcl) || 0,
+          avg: Number(selectedSpcStats?.avg) || 0,
           spec: spec,
-          min: Number(selectedSpcStats.min) || 0,
-          max: Number(selectedSpcStats.max) || 0,
+          min: Number(selectedSpcStats?.min) || 0,
+          max: Number(selectedSpcStats?.max) || 0,
           specUpper: specUpper,
           specLower: specLower,
           date: item.created_at ? format(new Date(item.created_at), 'dd/MM/yyyy HH:mm') : `Punto ${index + 1}`,
@@ -301,18 +301,18 @@ const Dashboard = () => {
           specDisplay: `${spec} ${machineUp >= 0 ? '+' : ''}${machineUp.toFixed(3)}/${machineLow >= 0 ? '+' : ''}${Math.abs(machineLow).toFixed(3)}`,
           specUpper: specUpper,
           specLower: specLower,
-          ucl: Number(selectedSpcStats.ucl) || 0,
-          lcl: Number(selectedSpcStats.lcl) || 0,
-          avg: Number(selectedSpcStats.avg) || 0,
-          std: Number(selectedSpcStats.std) || 0,
-          max: Number(selectedSpcStats.max) || 0,
-          min: Number(selectedSpcStats.min) || 0,
-          cp: Number(selectedSpcStats.cp) || 0,
-          cpk: Number(selectedSpcStats.cpk) || 0,
+          ucl: Number(selectedSpcStats?.ucl) || 0,
+          lcl: Number(selectedSpcStats?.lcl) || 0,
+          avg: Number(selectedSpcStats?.avg) || 0,
+          std: Number(selectedSpcStats?.std) || 0,
+          max: Number(selectedSpcStats?.max) || 0,
+          min: Number(selectedSpcStats?.min) || 0,
+          cp: Number(selectedSpcStats?.cp) || 0,
+          cpk: Number(selectedSpcStats?.cpk) || 0,
           machineUp: machineUp,
           machineLow: machineLow,
           sampleCount: processValues.length,
-          measurementName: selectedSpcStats.measurement_name
+          measurementName: selectedSpcStats?.measurement_name
         };
 
         console.log('🎊 Final chart data:', chartData.length, 'points');

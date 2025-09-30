@@ -41,7 +41,7 @@ const Machines = () => {
       const { data, error } = await supabase
         .from('machines')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as any;
 
       if (error) throw error;
       setMachines(data || []);
@@ -75,11 +75,11 @@ const Machines = () => {
           line: formData.line,
           process: formData.process
         }])
-        .select();
+        .select() as any;
 
       if (error) throw error;
 
-      setMachines([...machines, ...data]);
+      setMachines([...machines, ...data] as any);
       setFormData({ cmm_name: '', line: '', process: '' });
       setIsCreateDialogOpen(false);
 
@@ -116,13 +116,13 @@ const Machines = () => {
           process: formData.process
         })
         .eq('machine_id', editingMachine.machine_id)
-        .select();
+        .select() as any;
 
       if (error) throw error;
 
       setMachines(machines.map(machine => 
         machine.machine_id === editingMachine.machine_id ? data[0] : machine
-      ));
+      ) as any);
       
       setFormData({ cmm_name: '', line: '', process: '' });
       setEditingMachine(null);
