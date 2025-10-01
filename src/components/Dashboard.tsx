@@ -232,57 +232,94 @@ const Dashboard = () => {
 
         console.log('✅ Process values extracted:', processValues.length, 'records');
 
-        // PASO 2: Calcular estadísticas SPC directamente de los valores
-        const values = processValues.map(v => v.value);
-        const sum = values.reduce((a, b) => a + b, 0);
-        const avg = sum / values.length;
-        const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
-        const std = Math.sqrt(variance);
-        const max = Math.max(...values);
-        const min = Math.min(...values);
-        const ucl = avg + (3 * std);
-        const lcl = avg - (3 * std);
-        
-        // PASO 3: Obtener spec limits del primer measurement con ese processNumber
-        let nominal = 0;
-        let upperTol = 0;
-        let lowerTol = 0;
-        let upperSpecLimit = 0;
-        let lowerSpecLimit = 0;
-        
-        processData.forEach((row: any) => {
-          if (row.measurements && Array.isArray(row.measurements)) {
-            const measurement = row.measurements.find((m: any) => 
+        // PASO 2: Obtener estadísticas desde spc_statistics
+        // Primero obtenemos el machine_id de la máquina seleccionada
+        const { data: machineData, error: machineError } = await supabase
+          .from('machines')
+          .select('machine_id')
+          .eq('line', selectedMachine)
+          .maybeSingle();
+
+        if (machineError) {
+          console.error('❌ Error fetching machine_id:', machineError);
+          setSpcData(null);
+          return;
+        }
+
+        if (!machineData) {
+          console.error('❌ Machine not found');
+          setSpcData(null);
+          return;
+        }
+
+        // Obtener estadísticas SPC de la tabla
+        const { data: spcStatsData, error: spcStatsError } = await supabase
+          .from('spc_statistics')
+          .select('stats')
+          .eq('measurement_name', `machine_${machineData.machine_id}_all_measurements`)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (spcStatsError) {
+          console.error('❌ Error fetching SPC stats:', spcStatsError);
+        }
+
+        // Buscar las estadísticas para el proceso específico
+        let spcStats = null;
+        if (spcStatsData?.stats) {
+          const statsObj = spcStatsData.stats as any;
+          if (statsObj?.measurements) {
+            spcStats = statsObj.measurements.find((m: any) => 
               m.processNumber?.toString() === selectedProcess.toString()
             );
-            if (measurement && !nominal) {
-              nominal = Number(measurement.nominal) || 0;
-              upperTol = Number(measurement.upTol) || 0;
-              lowerTol = Number(measurement.lowTol) || 0;
-              upperSpecLimit = Number(measurement.upperSpecLimit) || 0;
-              lowerSpecLimit = Number(measurement.lowerSpecLimit) || 0;
-            }
           }
-        });
+        }
+
+        console.log('📊 SPC Stats from DB:', spcStats);
+
+        // Usar estadísticas de la BD o valores por defecto
+        const avg = spcStats?.avg || 0;
+        const std = spcStats?.std || 0;
+        const ucl = spcStats?.ucl || 0;
+        const lcl = spcStats?.lcl || 0;
+        const max = spcStats?.max || 0;
+        const min = spcStats?.min || 0;
+        const cp = spcStats?.cp || 0;
+        const cpk = spcStats?.cpk || 0;
+        
+        // PASO 3: Obtener spec limits de la tabla SPC o measurements
+        let nominal = spcStats?.nominal || 0;
+        let upperTol = spcStats?.upperTolerance || 0;
+        let lowerTol = spcStats?.lowerTolerance || 0;
+        let upperSpecLimit = spcStats?.upperSpecLimit || 0;
+        let lowerSpecLimit = spcStats?.lowerSpecLimit || 0;
+        
+        // Si no hay stats en BD, obtener de measurements
+        if (!spcStats) {
+          processData.forEach((row: any) => {
+            if (row.measurements && Array.isArray(row.measurements)) {
+              const measurement = row.measurements.find((m: any) => 
+                m.processNumber?.toString() === selectedProcess.toString()
+              );
+              if (measurement && !nominal) {
+                nominal = Number(measurement.nominal) || 0;
+                upperTol = Number(measurement.upTol) || 0;
+                lowerTol = Number(measurement.lowTol) || 0;
+                upperSpecLimit = Number(measurement.upperSpecLimit) || 0;
+                lowerSpecLimit = Number(measurement.lowerSpecLimit) || 0;
+              }
+            }
+          });
+        }
         
         console.log('📏 Spec values:', { nominal, upperTol, lowerTol, upperSpecLimit, lowerSpecLimit });
         
         // Use spec limits directly from the data
         const specUpper = upperSpecLimit;
         const specLower = lowerSpecLimit;
-        
-        // Calculate Cp and Cpk
-        let cp = 0;
-        let cpk = 0;
-        if (std > 0 && specUpper !== specLower) {
-          cp = (specUpper - specLower) / (6 * std);
-          cpk = Math.min(
-            (specUpper - avg) / (3 * std),
-            (avg - specLower) / (3 * std)
-          );
-        }
 
-        console.log('📊 Calculated stats:', { avg, std, ucl, lcl, min, max, cp, cpk });
+        console.log('📊 Stats from DB:', { avg, std, ucl, lcl, min, max, cp, cpk });
 
         // PASO 4: Crear los datos para el chart
         const chartData = processValues.map((item, index) => ({
