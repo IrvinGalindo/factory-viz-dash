@@ -14,114 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
-      file_uploads: {
-        Row: {
-          created_at: string | null
-          error_message: string | null
-          file_hash: string
-          file_size: number | null
-          filename: string
-          id: string
-          inspection_date: string | null
-          inspector_name: string | null
-          machine_id: string | null
-          cmm_name: string | null
-          original_filename: string | null
-          processed_at: string | null
-          processing_status: string | null
-          qr_code: string | null
-          shift: string | null
-          updated_at: string | null
-          upload_timestamp: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          error_message?: string | null
-          file_hash: string
-          file_size?: number | null
-          filename: string
-          id?: string
-          inspection_date?: string | null
-          inspector_name?: string | null
-          machine_id?: string | null
-          cmm_name?: string | null
-          original_filename?: string | null
-          processed_at?: string | null
-          processing_status?: string | null
-          qr_code?: string | null
-          shift?: string | null
-          updated_at?: string | null
-          upload_timestamp?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          error_message?: string | null
-          file_hash?: string
-          file_size?: number | null
-          filename?: string
-          id?: string
-          inspection_date?: string | null
-          inspector_name?: string | null
-          machine_id?: string | null
-          cmm_name?: string | null
-          original_filename?: string | null
-          processed_at?: string | null
-          processing_status?: string | null
-          qr_code?: string | null
-          shift?: string | null
-          updated_at?: string | null
-          upload_timestamp?: string | null
-        }
-        Relationships: []
-      }
-      line_estadistics: {
-        Row: {
-          date: string | null
-          id: number
-          inspector: string | null
-          line_values: Json | null
-          cmm_name: string
-          turn: string | null
-        }
-        Insert: {
-          date?: string | null
-          id?: number
-          inspector?: string | null
-          line_values?: Json | null
-          cmm_name: string
-          turn?: string | null
-        }
-        Update: {
-          date?: string | null
-          id?: number
-          inspector?: string | null
-          line_values?: Json | null
-          cmm_name?: string
-          turn?: string | null
-        }
-        Relationships: []
-      }
       machines: {
         Row: {
-          created_at: string
-          machine_id: string
           cmm_name: string | null
+          created_at: string
+          line: string | null
+          machine_id: string
           process: string | null
-          qr_code: string | null
         }
         Insert: {
-          created_at?: string
-          machine_id?: string
           cmm_name?: string | null
+          created_at?: string
+          line?: string | null
+          machine_id?: string
           process?: string | null
-          qr_code?: string | null
         }
         Update: {
-          created_at?: string
-          machine_id?: string
           cmm_name?: string | null
+          created_at?: string
+          line?: string | null
+          machine_id?: string
           process?: string | null
-          qr_code?: string | null
         }
         Relationships: []
       }
@@ -145,31 +58,22 @@ export type Database = {
       }
       processes: {
         Row: {
-          column_name: string | null
           created_at: string
-          item: string | null
+          measurements: Json | null
           process_id: string
-          process_number: string | null
           result_process_id: string | null
-          value: number | null
         }
         Insert: {
-          column_name?: string | null
           created_at?: string
-          item?: string | null
+          measurements?: Json | null
           process_id?: string
-          process_number?: string | null
           result_process_id?: string | null
-          value?: number | null
         }
         Update: {
-          column_name?: string | null
           created_at?: string
-          item?: string | null
+          measurements?: Json | null
           process_id?: string
-          process_number?: string | null
           result_process_id?: string | null
-          value?: number | null
         }
         Relationships: [
           {
@@ -251,55 +155,25 @@ export type Database = {
       }
       spc_statistics: {
         Row: {
-          avg: number | null
-          calculation_method: string | null
-          cp: number | null
-          cpk: number | null
           created_at: string | null
-          id: number
-          lcl: number | null
-          max: number | null
+          id: string
           measurement_name: string
-          min: number | null
           result_process_id: string
-          sample_count: number | null
-          spec: string | null
-          std: number | null
-          ucl: number | null
+          stats: Json
         }
         Insert: {
-          avg?: number | null
-          calculation_method?: string | null
-          cp?: number | null
-          cpk?: number | null
           created_at?: string | null
-          id?: number
-          lcl?: number | null
-          max?: number | null
+          id?: string
           measurement_name: string
-          min?: number | null
           result_process_id: string
-          sample_count?: number | null
-          spec?: string | null
-          std?: number | null
-          ucl?: number | null
+          stats: Json
         }
         Update: {
-          avg?: number | null
-          calculation_method?: string | null
-          cp?: number | null
-          cpk?: number | null
           created_at?: string | null
-          id?: number
-          lcl?: number | null
-          max?: number | null
+          id?: string
           measurement_name?: string
-          min?: number | null
           result_process_id?: string
-          sample_count?: number | null
-          spec?: string | null
-          std?: number | null
-          ucl?: number | null
+          stats?: Json
         }
         Relationships: [
           {
@@ -319,17 +193,6 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
-      }
-      calculate_spc_stats: {
-        Args: {
-          p_column_type: string
-          p_date: string
-          p_item: string
-          p_cmm_name: string
-          p_process_number: number
-          p_shift: string
-        }
-        Returns: Json
       }
       halfvec_avg: {
         Args: { "": number[] }
