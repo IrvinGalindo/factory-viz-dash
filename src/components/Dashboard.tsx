@@ -156,9 +156,10 @@ const Dashboard = () => {
 
       setSpcLoading(true);
       try {
-        // Build the date filter - include full day range
-        const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') + 'T00:00:00' : null;
-        const toDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') + 'T23:59:59' : null;
+        // Build the date filter - use date-only format for inclusive range
+        const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
+        // For toDate, use the next day at 00:00:00 to include all records from the selected day
+        const toDate = dateRange.to ? format(new Date(dateRange.to.getTime() + 86400000), 'yyyy-MM-dd') : null;
 
         console.log('🎯 Buscando datos SPC para:', { 
           machine: selectedMachine, 
@@ -188,7 +189,8 @@ const Dashboard = () => {
           processQuery = processQuery.gte('result_process.date', fromDate);
         }
         if (toDate) {
-          processQuery = processQuery.lte('result_process.date', toDate);
+          // Use lt (less than) instead of lte since we added one day
+          processQuery = processQuery.lt('result_process.date', toDate);
         }
 
         const { data: processData, error: processError } = await processQuery as any;
