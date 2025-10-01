@@ -156,9 +156,9 @@ const Dashboard = () => {
 
       setSpcLoading(true);
       try {
-        // Build the date filter
-        const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : null;
-        const toDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : null;
+        // Build the date filter - include full day range
+        const fromDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') + 'T00:00:00' : null;
+        const toDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') + 'T23:59:59' : null;
 
         console.log('🎯 Buscando datos SPC para:', { 
           machine: selectedMachine, 
