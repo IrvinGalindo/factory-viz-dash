@@ -122,8 +122,8 @@ const Dashboard = () => {
         data?.forEach((row: any) => {
           if (row.measurements && Array.isArray(row.measurements)) {
             row.measurements.forEach((measurement: any) => {
-              if (measurement.process_number) {
-                processNumbers.add(measurement.process_number.toString());
+              if (measurement.processNumber) {
+                processNumbers.add(measurement.processNumber.toString());
               }
             });
           }
@@ -211,7 +211,7 @@ const Dashboard = () => {
         processData.forEach((row: any) => {
           if (row.measurements && Array.isArray(row.measurements)) {
             row.measurements.forEach((measurement: any) => {
-              if (measurement.process_number?.toString() === selectedProcess.toString() && measurement.value != null) {
+              if (measurement.processNumber?.toString() === selectedProcess.toString() && measurement.value != null) {
                 processValues.push({
                   value: Number(measurement.value),
                   created_at: row.created_at,
