@@ -247,6 +247,8 @@ const Dashboard = () => {
         let nominal = 0;
         let upperTol = 0;
         let lowerTol = 0;
+        let upperSpecLimit = 0;
+        let lowerSpecLimit = 0;
         
         processData.forEach((row: any) => {
           if (row.measurements && Array.isArray(row.measurements)) {
@@ -257,15 +259,17 @@ const Dashboard = () => {
               nominal = Number(measurement.nominal) || 0;
               upperTol = Number(measurement.upTol) || 0;
               lowerTol = Number(measurement.lowTol) || 0;
+              upperSpecLimit = Number(measurement.upperSpecLimit) || 0;
+              lowerSpecLimit = Number(measurement.lowerSpecLimit) || 0;
             }
           }
         });
         
-        console.log('📏 Spec values:', { nominal, upperTol, lowerTol });
+        console.log('📏 Spec values:', { nominal, upperTol, lowerTol, upperSpecLimit, lowerSpecLimit });
         
-        // Calculate spec limits
-        const specUpper = nominal + upperTol;
-        const specLower = nominal - lowerTol;
+        // Use spec limits directly from the data
+        const specUpper = upperSpecLimit;
+        const specLower = lowerSpecLimit;
         
         // Calculate Cp and Cpk
         let cp = 0;
