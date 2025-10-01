@@ -104,7 +104,7 @@ const Dashboard = () => {
         const { data, error } = await supabase
           .from('processes')
           .select(`
-            process_number,
+            measurements,
             result_process!inner(
               machine_id,
               machines!inner(line)
@@ -117,7 +117,19 @@ const Dashboard = () => {
           return;
         }
 
-        const uniqueProcesses = [...new Set(data?.map((p: any) => p.process_number))].filter(Boolean);
+        // Extraer números de proceso únicos del JSONB measurements
+        const processNumbers = new Set<string>();
+        data?.forEach((row: any) => {
+          if (row.measurements && Array.isArray(row.measurements)) {
+            row.measurements.forEach((measurement: any) => {
+              if (measurement.process_number) {
+                processNumbers.add(measurement.process_number.toString());
+              }
+            });
+          }
+        });
+
+        const uniqueProcesses = Array.from(processNumbers).sort();
         console.log('📋 Procesos encontrados:', uniqueProcesses);
         
         setProcesses(uniqueProcesses as any);
@@ -154,14 +166,13 @@ const Dashboard = () => {
           dateRange: { fromDate, toDate }
         });
 
-        // PASO 1: Obtener SOLO los datos de procesos que coincidan exactamente
+        // PASO 1: Obtener datos de procesos desde el JSONB measurements
         let processQuery = supabase
           .from('processes')
           .select(`
             process_id,
             result_process_id,
-            process_number,
-            value,
+            measurements,
             created_at,
             result_process!inner(
               result_process_id,
@@ -170,8 +181,7 @@ const Dashboard = () => {
               machines!inner(line)
             )
           `)
-          .eq('result_process.machines.line', selectedMachine)
-          .eq('process_number', selectedProcess.toString());
+          .eq('result_process.machines.line', selectedMachine);
 
         // Apply date filters if they exist
         if (fromDate) {
@@ -181,7 +191,7 @@ const Dashboard = () => {
           processQuery = processQuery.lte('result_process.date', toDate);
         }
 
-        const { data: processData, error: processError } = await processQuery;
+        const { data: processData, error: processError } = await processQuery as any;
 
         if (processError) {
           console.error('❌ Error fetching process data:', processError);
@@ -195,10 +205,33 @@ const Dashboard = () => {
           return;
         }
 
-        console.log('✅ Process data found:', processData.length, 'records');
+        // Extraer valores del proceso específico desde measurements JSONB
+        const processValues: Array<{ value: number; created_at: string; result_process_id: string }> = [];
+        
+        processData.forEach((row: any) => {
+          if (row.measurements && Array.isArray(row.measurements)) {
+            row.measurements.forEach((measurement: any) => {
+              if (measurement.process_number?.toString() === selectedProcess.toString() && measurement.value != null) {
+                processValues.push({
+                  value: Number(measurement.value),
+                  created_at: row.created_at,
+                  result_process_id: row.result_process_id
+                });
+              }
+            });
+          }
+        });
+
+        if (processValues.length === 0) {
+          console.log('⚠️ No values found for process:', selectedProcess);
+          setSpcData(null);
+          return;
+        }
+
+        console.log('✅ Process values extracted:', processValues.length, 'records');
 
         // PASO 2: Obtener los result_process_id únicos del proceso específico
-        const resultProcessIds = [...new Set(processData.map(p => p.result_process_id))];
+        const resultProcessIds = [...new Set(processData.map((p: any) => p.result_process_id))].filter(Boolean) as string[];
         
         console.log('🔍 Result Process IDs for this specific process:', resultProcessIds);
 
@@ -248,23 +281,8 @@ const Dashboard = () => {
         
         console.log('🎚️ Machine limits:', { machineUp, machineLow });
 
-        // PASO 5: Filtrar solo los valores del proceso específico
-        const processValues = processData
-          .filter(d => d.process_number === selectedProcess.toString()) // Extra seguridad
-          .map(d => ({
-            value: d.value,
-            created_at: d.created_at,
-            result_process_id: d.result_process_id
-          }))
-          .filter(d => d.value !== null && d.value !== undefined);
-
+        // Los valores ya fueron extraídos anteriormente del JSONB
         console.log('📈 Process values for chart:', processValues.length, 'points');
-
-        if (processValues.length === 0) {
-          console.log('⚠️ No valid values found for process:', selectedProcess);
-          setSpcData(null);
-          return;
-        }
         
         const spec = Number(selectedSpcStats?.spec) || 0;
         
