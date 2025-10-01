@@ -230,70 +230,18 @@ const Dashboard = () => {
 
         console.log('✅ Process values extracted:', processValues.length, 'records');
 
-        // PASO 2: Obtener los result_process_id únicos del proceso específico
-        const resultProcessIds = [...new Set(processData.map((p: any) => p.result_process_id))].filter(Boolean) as string[];
+        // PASO 2: Calcular estadísticas SPC directamente de los valores
+        const values = processValues.map(v => v.value);
+        const sum = values.reduce((a, b) => a + b, 0);
+        const avg = sum / values.length;
+        const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
+        const std = Math.sqrt(variance);
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+        const ucl = avg + (3 * std);
+        const lcl = avg - (3 * std);
         
-        console.log('🔍 Result Process IDs for this specific process:', resultProcessIds);
-
-        // PASO 3: Obtener estadísticas SPC desde el JSONB stats
-        const { data: spcStatsData, error: spcError } = await supabase
-          .from('spc_statistics')
-          .select(`
-            id,
-            result_process_id,
-            measurement_name,
-            stats,
-            created_at
-          `)
-          .in('result_process_id', resultProcessIds)
-          .order('created_at', { ascending: false }) as any;
-
-        console.log('📊 SPC Stats Data found:', spcStatsData?.length || 0, 'records');
-        console.log('SPC Data details:', spcStatsData);
-
-        if (spcError || !spcStatsData || spcStatsData.length === 0) {
-          console.log('❌ No SPC statistics found for process:', selectedProcess, 'Error:', spcError);
-          setSpcData(null);
-          return;
-        }
-
-        // PASO 4: Buscar las estadísticas del proceso específico en el JSONB stats
-        let processStats: any = null;
-        
-        for (const statRow of spcStatsData) {
-          if (statRow.stats && statRow.stats.measurements) {
-            const measurements = statRow.stats.measurements;
-            
-            // Buscar el proceso específico en el array de measurements
-            const foundMeasurement = measurements.find((m: any) => 
-              m.processNumber?.toString() === selectedProcess.toString()
-            );
-            
-            if (foundMeasurement) {
-              processStats = foundMeasurement;
-              console.log('🎯 Found stats for process:', selectedProcess, processStats);
-              break;
-            }
-          }
-        }
-
-        if (!processStats) {
-          console.log('⚠️ No stats found for process:', selectedProcess);
-          setSpcData(null);
-          return;
-        }
-
-        // Extraer valores de las estadísticas
-        const ucl = Number(processStats.ucl) || 0;
-        const lcl = Number(processStats.lcl) || 0;
-        const avg = Number(processStats.avg) || 0;
-        const std = Number(processStats.std) || 0;
-        const max = Number(processStats.max) || 0;
-        const min = Number(processStats.min) || 0;
-        const cp = Number(processStats.cp) || 0;
-        const cpk = Number(processStats.cpk) || 0;
-        
-        // Obtener spec limits del primer measurement con ese processNumber
+        // PASO 3: Obtener spec limits del primer measurement con ese processNumber
         let nominal = 0;
         let upperTol = 0;
         let lowerTol = 0;
@@ -312,23 +260,25 @@ const Dashboard = () => {
         });
         
         console.log('📏 Spec values:', { nominal, upperTol, lowerTol });
-
-        // Los valores ya fueron extraídos anteriormente del JSONB
-        console.log('📈 Process values for chart:', processValues.length, 'points');
         
-        // Calculate spec limits (límites de especificación)
-        const specUpper = nominal + upperTol;  // Límite superior
-        const specLower = nominal + lowerTol;  // Límite inferior (lowerTol puede ser negativo)
+        // Calculate spec limits
+        const specUpper = nominal + upperTol;
+        const specLower = nominal + lowerTol;
+        
+        // Calculate Cp and Cpk
+        let cp = 0;
+        let cpk = 0;
+        if (std > 0 && specUpper !== specLower) {
+          cp = (specUpper - specLower) / (6 * std);
+          cpk = Math.min(
+            (specUpper - avg) / (3 * std),
+            (avg - specLower) / (3 * std)
+          );
+        }
 
-        console.log('📏 Spec limits calculation:', {
-          nominal,
-          upperTol,
-          lowerTol,
-          specUpper,
-          specLower
-        });
+        console.log('📊 Calculated stats:', { avg, std, ucl, lcl, min, max, cp, cpk });
 
-        // PASO 5: Crear los datos para el chart
+        // PASO 4: Crear los datos para el chart
         const chartData = processValues.map((item, index) => ({
           point: index + 1,
           value: item.value,
