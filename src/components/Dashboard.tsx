@@ -265,7 +265,7 @@ const Dashboard = () => {
         
         // Calculate spec limits
         const specUpper = nominal + upperTol;
-        const specLower = nominal + lowerTol;
+        const specLower = nominal - lowerTol;
         
         // Calculate Cp and Cpk
         let cp = 0;
