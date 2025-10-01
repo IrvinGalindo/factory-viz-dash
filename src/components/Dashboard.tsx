@@ -235,29 +235,18 @@ const Dashboard = () => {
         
         console.log('🔍 Result Process IDs for this specific process:', resultProcessIds);
 
-        // PASO 3: Query más específico para SPC statistics
-        // Vamos a buscar todas las estadísticas y luego filtrar la que mejor coincida
+        // PASO 3: Obtener estadísticas SPC desde el JSONB stats
         const { data: spcStatsData, error: spcError } = await supabase
           .from('spc_statistics')
           .select(`
             id,
             result_process_id,
             measurement_name,
-            spec,
-            sample_count,
-            ucl,
-            lcl,
-            avg,
-            std,
-            max,
-            min,
-            cp,
-            cpk,
-            machine_up,
-            machine_low
+            stats,
+            created_at
           `)
           .in('result_process_id', resultProcessIds)
-          .order('created_at', { ascending: false }); // Ordenar por más reciente
+          .order('created_at', { ascending: false }) as any;
 
         console.log('📊 SPC Stats Data found:', spcStatsData?.length || 0, 'records');
         console.log('SPC Data details:', spcStatsData);
@@ -268,69 +257,110 @@ const Dashboard = () => {
           return;
         }
 
-        // PASO 4: Seleccionar la estadística más relevante
-        // Prioridad: 1) measurement_name que coincida con el proceso, 2) la más reciente
-        let selectedSpcStats: any = spcStatsData.find((stat: any) => 
-          stat.measurement_name && stat.measurement_name.includes(selectedProcess)
-        ) || spcStatsData[0]; // Fallback a la más reciente
+        // PASO 4: Buscar las estadísticas del proceso específico en el JSONB stats
+        let processStats: any = null;
+        
+        for (const statRow of spcStatsData) {
+          if (statRow.stats && statRow.stats.measurements) {
+            const measurements = statRow.stats.measurements;
+            
+            // Buscar el proceso específico en el array de measurements
+            const foundMeasurement = measurements.find((m: any) => 
+              m.processNumber?.toString() === selectedProcess.toString()
+            );
+            
+            if (foundMeasurement) {
+              processStats = foundMeasurement;
+              console.log('🎯 Found stats for process:', selectedProcess, processStats);
+              break;
+            }
+          }
+        }
 
-        console.log('🎯 Selected SPC Stats:', selectedSpcStats);
+        if (!processStats) {
+          console.log('⚠️ No stats found for process:', selectedProcess);
+          setSpcData(null);
+          return;
+        }
+
+        // Extraer valores de las estadísticas
+        const ucl = Number(processStats.ucl) || 0;
+        const lcl = Number(processStats.lcl) || 0;
+        const avg = Number(processStats.avg) || 0;
+        const std = Number(processStats.std) || 0;
+        const max = Number(processStats.max) || 0;
+        const min = Number(processStats.min) || 0;
+        const cp = Number(processStats.cp) || 0;
+        const cpk = Number(processStats.cpk) || 0;
         
-        const machineUp = Number(selectedSpcStats?.machine_up) || 0;
-        const machineLow = Number(selectedSpcStats?.machine_low) || 0;
+        // Obtener spec limits del primer measurement con ese processNumber
+        let nominal = 0;
+        let upperTol = 0;
+        let lowerTol = 0;
         
-        console.log('🎚️ Machine limits:', { machineUp, machineLow });
+        processData.forEach((row: any) => {
+          if (row.measurements && Array.isArray(row.measurements)) {
+            const measurement = row.measurements.find((m: any) => 
+              m.processNumber?.toString() === selectedProcess.toString()
+            );
+            if (measurement && !nominal) {
+              nominal = Number(measurement.nominal) || 0;
+              upperTol = Number(measurement.upTol) || 0;
+              lowerTol = Number(measurement.lowTol) || 0;
+            }
+          }
+        });
+        
+        console.log('📏 Spec values:', { nominal, upperTol, lowerTol });
 
         // Los valores ya fueron extraídos anteriormente del JSONB
         console.log('📈 Process values for chart:', processValues.length, 'points');
         
-        const spec = Number(selectedSpcStats?.spec) || 0;
-        
         // Calculate spec limits (límites de especificación)
-        const specUpper = spec + machineUp;  // Límite superior = nominal + machine_up
-        const specLower = spec - Math.abs(machineLow); // Límite inferior = nominal - machine_low
+        const specUpper = nominal + upperTol;  // Límite superior
+        const specLower = nominal + lowerTol;  // Límite inferior (lowerTol puede ser negativo)
 
         console.log('📏 Spec limits calculation:', {
-          spec,
-          machineUp,
-          machineLow,
+          nominal,
+          upperTol,
+          lowerTol,
           specUpper,
           specLower
         });
 
-        // PASO 6: Crear los datos para el chart
+        // PASO 5: Crear los datos para el chart
         const chartData = processValues.map((item, index) => ({
           point: index + 1,
           value: item.value,
-          ucl: Number(selectedSpcStats?.ucl) || 0,
-          lcl: Number(selectedSpcStats?.lcl) || 0,
-          avg: Number(selectedSpcStats?.avg) || 0,
-          spec: spec,
-          min: Number(selectedSpcStats?.min) || 0,
-          max: Number(selectedSpcStats?.max) || 0,
+          ucl: ucl,
+          lcl: lcl,
+          avg: avg,
+          spec: nominal,
+          min: min,
+          max: max,
           specUpper: specUpper,
           specLower: specLower,
           date: item.created_at ? format(new Date(item.created_at), 'dd/MM/yyyy HH:mm') : `Punto ${index + 1}`,
-          result_process_id: item.result_process_id // Para debugging
+          result_process_id: item.result_process_id
         }));
         
         const statisticsData = {
-          spec: spec,
-          specDisplay: `${spec} ${machineUp >= 0 ? '+' : ''}${machineUp.toFixed(3)}/${machineLow >= 0 ? '+' : ''}${Math.abs(machineLow).toFixed(3)}`,
+          spec: nominal,
+          specDisplay: `${nominal} ${upperTol >= 0 ? '+' : ''}${upperTol.toFixed(3)}/${lowerTol >= 0 ? '+' : ''}${lowerTol.toFixed(3)}`,
           specUpper: specUpper,
           specLower: specLower,
-          ucl: Number(selectedSpcStats?.ucl) || 0,
-          lcl: Number(selectedSpcStats?.lcl) || 0,
-          avg: Number(selectedSpcStats?.avg) || 0,
-          std: Number(selectedSpcStats?.std) || 0,
-          max: Number(selectedSpcStats?.max) || 0,
-          min: Number(selectedSpcStats?.min) || 0,
-          cp: Number(selectedSpcStats?.cp) || 0,
-          cpk: Number(selectedSpcStats?.cpk) || 0,
-          machineUp: machineUp,
-          machineLow: machineLow,
+          ucl: ucl,
+          lcl: lcl,
+          avg: avg,
+          std: std,
+          max: max,
+          min: min,
+          cp: cp,
+          cpk: cpk,
+          machineUp: upperTol,
+          machineLow: lowerTol,
           sampleCount: processValues.length,
-          measurementName: selectedSpcStats?.measurement_name
+          measurementName: `Proceso ${selectedProcess}`
         };
 
         console.log('🎊 Final chart data:', chartData.length, 'points');
