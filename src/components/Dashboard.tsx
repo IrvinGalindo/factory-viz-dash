@@ -289,6 +289,7 @@ const Dashboard = () => {
         const cpk = spcStats?.cpk || 0;
         const outOfSpecCount = spcStats?.outOfSpecCount || 0;
         const status = spcStats?.status || 'unknown';
+        const sampleCount = spcStats?.sampleCount || processValues.length;
         
         // PASO 3: Obtener spec limits de la tabla SPC o measurements
         let nominal = spcStats?.nominal || 0;
@@ -361,7 +362,7 @@ const Dashboard = () => {
           cpk: cpk,
           machineUp: upperTol,
           machineLow: lowerTol,
-          sampleCount: processValues.length,
+          sampleCount: sampleCount,
           measurementName: `Proceso ${selectedProcess}`,
           outOfSpecCount: outOfSpecCount,
           status: statusDisplay
