@@ -287,6 +287,8 @@ const Dashboard = () => {
         const min = spcStats?.min || 0;
         const cp = spcStats?.cp || 0;
         const cpk = spcStats?.cpk || 0;
+        const outOfSpecCount = spcStats?.outOfSpecCount || 0;
+        const status = spcStats?.status || 'unknown';
         
         // PASO 3: Obtener spec limits de la tabla SPC o measurements
         let nominal = spcStats?.nominal || 0;
@@ -321,15 +323,7 @@ const Dashboard = () => {
 
         console.log('📊 Stats from DB:', { avg, std, ucl, lcl, min, max, cp, cpk });
 
-        // PASO 4: Calculate out of spec count
-        const outOfSpecCount = processValues.filter(item => 
-          item.value > specUpper || item.value < specLower
-        ).length;
-        
-        // Determine status
-        const status = outOfSpecCount === 0 ? 'Conforme' : 'No Conforme';
-        
-        // Crear los datos para el chart
+        // PASO 4: Crear los datos para el chart
         const chartData = processValues.map((item, index) => ({
           point: index + 1,
           value: item.value,
@@ -344,6 +338,13 @@ const Dashboard = () => {
           date: item.created_at ? format(new Date(item.created_at), 'dd/MM/yyyy HH:mm') : `Punto ${index + 1}`,
           result_process_id: item.result_process_id
         }));
+        
+        // Map status from DB to display text
+        const statusDisplay = status === 'in_control' ? 'Conforme' :
+                             status === 'out_of_control' ? 'Fuera de Control' :
+                             status === 'warning' ? 'Advertencia' :
+                             status === 'insufficient_data' ? 'Datos Insuficientes' :
+                             'Desconocido';
         
         const statisticsData = {
           spec: nominal,
@@ -363,7 +364,7 @@ const Dashboard = () => {
           sampleCount: processValues.length,
           measurementName: `Proceso ${selectedProcess}`,
           outOfSpecCount: outOfSpecCount,
-          status: status
+          status: statusDisplay
         };
 
         console.log('🎊 Final chart data:', chartData.length, 'points');
