@@ -85,23 +85,17 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
               <div className="font-semibold text-blue-800 dark:text-blue-200">Promedio</div>
               <div className="text-blue-900 dark:text-blue-100">{stats.avg.toFixed(3)}</div>
             </div>
-            <div className={`p-2 rounded ${stats.status === 'Conforme' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
-              <div className={`font-semibold ${stats.status === 'Conforme' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>Estado</div>
-              <div className={stats.status === 'Conforme' ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'}>{stats.status}</div>
+            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+              <div className="font-semibold">Std</div>
+              <div>{stats.std.toFixed(3)}</div>
             </div>
-            <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded col-span-2">
-              <div className="font-semibold text-yellow-800 dark:text-yellow-200">No Conformes</div>
-              <div className="text-yellow-900 dark:text-yellow-100">
-                {stats.outOfSpecCount}/{stats.sampleCount} ({((stats.outOfSpecCount / stats.sampleCount) * 100).toFixed(1)}%)
-              </div>
+            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
+              <div className="font-semibold text-green-800 dark:text-green-200">Cp</div>
+              <div className="text-green-900 dark:text-green-100">{stats.cp.toFixed(3)}</div>
             </div>
-            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded">
-              <div className="font-semibold text-purple-800 dark:text-purple-200">Máximo</div>
-              <div className="text-purple-900 dark:text-purple-100">{stats.max.toFixed(3)}</div>
-            </div>
-            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded">
-              <div className="font-semibold text-purple-800 dark:text-purple-200">Mínimo</div>
-              <div className="text-purple-900 dark:text-purple-100">{stats.min.toFixed(3)}</div>
+            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
+              <div className="font-semibold text-green-800 dark:text-green-200">Cpk</div>
+              <div className="text-green-900 dark:text-green-100">{stats.cpk.toFixed(3)}</div>
             </div>
           </div>
         </CardContent>

@@ -723,17 +723,19 @@ const Dashboard = () => {
                         <div className="font-semibold">Puntos de datos:</div>
                         <div>{spcData.stats.sampleCount}</div>
                       </div>
-                      <div className="bg-muted/50 p-2 rounded">
-                        <div className="font-semibold">CP:</div>
-                        <div>{spcData.stats.cp.toFixed(3)}</div>
+                      <div className={`p-2 rounded ${spcData.stats.status === 'Conforme' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                        <div className={`font-semibold ${spcData.stats.status === 'Conforme' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>Estado:</div>
+                        <div className={spcData.stats.status === 'Conforme' ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'}>{spcData.stats.status}</div>
+                      </div>
+                      <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
+                        <div className="font-semibold text-yellow-800 dark:text-yellow-200">No Conformes:</div>
+                        <div className="text-yellow-900 dark:text-yellow-100">
+                          {spcData.stats.outOfSpecCount}/{spcData.stats.sampleCount} ({((spcData.stats.outOfSpecCount / spcData.stats.sampleCount) * 100).toFixed(1)}%)
+                        </div>
                       </div>
                       <div className="bg-muted/50 p-2 rounded">
-                        <div className="font-semibold">CPK:</div>
-                        <div>{spcData.stats.cpk.toFixed(3)}</div>
-                      </div>
-                      <div className="bg-muted/50 p-2 rounded">
-                        <div className="font-semibold">Desv. Std:</div>
-                        <div>{spcData.stats.std.toFixed(3)}</div>
+                        <div className="font-semibold">Fuera de Spec:</div>
+                        <div>{spcData.stats.outOfSpecCount}</div>
                       </div>
                     </div>
                   </div>
