@@ -321,7 +321,15 @@ const Dashboard = () => {
 
         console.log('📊 Stats from DB:', { avg, std, ucl, lcl, min, max, cp, cpk });
 
-        // PASO 4: Crear los datos para el chart
+        // PASO 4: Calculate out of spec count
+        const outOfSpecCount = processValues.filter(item => 
+          item.value > specUpper || item.value < specLower
+        ).length;
+        
+        // Determine status
+        const status = outOfSpecCount === 0 ? 'Conforme' : 'No Conforme';
+        
+        // Crear los datos para el chart
         const chartData = processValues.map((item, index) => ({
           point: index + 1,
           value: item.value,
@@ -353,7 +361,9 @@ const Dashboard = () => {
           machineUp: upperTol,
           machineLow: lowerTol,
           sampleCount: processValues.length,
-          measurementName: `Proceso ${selectedProcess}`
+          measurementName: `Proceso ${selectedProcess}`,
+          outOfSpecCount: outOfSpecCount,
+          status: status
         };
 
         console.log('🎊 Final chart data:', chartData.length, 'points');
