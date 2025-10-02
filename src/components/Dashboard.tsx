@@ -349,7 +349,7 @@ const Dashboard = () => {
         
         const statisticsData = {
           spec: nominal,
-          specDisplay: `${nominal} ${upperTol >= 0 ? '+' : ''}${upperTol.toFixed(3)}/${lowerTol >= 0 ? '+' : ''}${lowerTol.toFixed(3)}`,
+          specDisplay: `${nominal} ${upperTol.toFixed(3)}/${lowerTol.toFixed(3)}`,
           specUpper: specUpper,
           specLower: specLower,
           ucl: ucl,
