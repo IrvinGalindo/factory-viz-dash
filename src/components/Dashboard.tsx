@@ -367,6 +367,8 @@ const Dashboard = () => {
         const min = spcStats?.min || 0;
         const cp = spcStats?.cp || 0;
         const cpk = spcStats?.cpk || 0;
+        const pp = spcStats?.pp;
+        const ppk = spcStats?.ppk;
         const outOfSpecCount = spcStats?.outOfSpecCount || 0;
         const status = spcStats?.status || "unknown";
         const sampleCount = spcStats?.sampleCount || processValues.length;
@@ -465,6 +467,8 @@ const Dashboard = () => {
           min: min,
           cp: cp,
           cpk: cpk,
+          pp: pp,
+          ppk: ppk,
           machineUp: upperTol,
           machineLow: lowerTol,
           sampleCount: sampleCount,

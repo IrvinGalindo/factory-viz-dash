@@ -25,6 +25,8 @@ interface SPCStats {
   min: number;
   cp: number;
   cpk: number;
+  pp?: number;
+  ppk?: number;
   machineUp: number;
   machineLow: number;
   sampleCount: number;
@@ -97,6 +99,18 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
               <div className="font-semibold text-green-800 dark:text-green-200">Cpk</div>
               <div className="text-green-900 dark:text-green-100">{stats.cpk.toFixed(3)}</div>
             </div>
+            {stats.pp !== undefined && (
+              <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
+                <div className="font-semibold text-teal-800 dark:text-teal-200">Pp</div>
+                <div className="text-teal-900 dark:text-teal-100">{stats.pp.toFixed(3)}</div>
+              </div>
+            )}
+            {stats.ppk !== undefined && (
+              <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
+                <div className="font-semibold text-teal-800 dark:text-teal-200">Ppk</div>
+                <div className="text-teal-900 dark:text-teal-100">{stats.ppk.toFixed(3)}</div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
