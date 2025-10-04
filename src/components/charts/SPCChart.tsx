@@ -21,6 +21,8 @@ interface SPCStats {
   lcl: number;
   avg: number;
   std: number;
+  stdWithin?: number;
+  stdOverall?: number;
   max: number;
   min: number;
   cp: number;
@@ -88,8 +90,12 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
               <div className="text-blue-900 dark:text-blue-100">{stats.avg.toFixed(3)}</div>
             </div>
             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-              <div className="font-semibold">Std</div>
-              <div>{stats.std.toFixed(3)}</div>
+              <div className="font-semibold">Variación Instantánea</div>
+              <div>{(stats.stdWithin ?? stats.std).toFixed(3)}</div>
+            </div>
+            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
+              <div className="font-semibold">Variación Total</div>
+              <div>{(stats.stdOverall ?? stats.std).toFixed(3)}</div>
             </div>
             <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
               <div className="font-semibold text-green-800 dark:text-green-200">Cp</div>

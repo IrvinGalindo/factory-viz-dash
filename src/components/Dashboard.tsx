@@ -369,6 +369,8 @@ const Dashboard = () => {
         const cpk = spcStats?.cpk || 0;
         const pp = spcStats?.pp;
         const ppk = spcStats?.ppk;
+        const stdWithin = spcStats?.stdWithin;
+        const stdOverall = spcStats?.stdOverall;
         const outOfSpecCount = spcStats?.outOfSpecCount || 0;
         const status = spcStats?.status || "unknown";
         const sampleCount = spcStats?.sampleCount || processValues.length;
@@ -463,6 +465,8 @@ const Dashboard = () => {
           lcl: lcl,
           avg: avg,
           std: std,
+          stdWithin: stdWithin,
+          stdOverall: stdOverall,
           max: max,
           min: min,
           cp: cp,
