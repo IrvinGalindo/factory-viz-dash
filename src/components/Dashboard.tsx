@@ -305,27 +305,40 @@ const Dashboard = () => {
           return;
         }
 
-        // Obtener estadísticas SPC de la tabla con filtro de fecha basado en result_process.date
-        let spcStatsQuery = supabase
-          .from("spc_statistics")
-          .select("stats, result_process!inner(date)")
-          .eq(
-            "measurement_name",
-            `machine_${machineData.machine_id}_all_measurements`
-          );
+        // Obtener todos los result_process_ids que coinciden con el rango de fechas
+        const { data: resultProcessIds, error: rpError } = await supabase
+          .from("result_process")
+          .select("result_process_id")
+          .eq("machine_id", machineData.machine_id)
+          .gte("date", fromDate || "1970-01-01")
+          .lt("date", toDate || "2100-01-01");
 
-        // Apply date filters to result_process.date
-        if (fromDate) {
-          spcStatsQuery = spcStatsQuery.gte("result_process.date", fromDate);
-        }
-        if (toDate) {
-          spcStatsQuery = spcStatsQuery.lt("result_process.date", toDate);
+        if (rpError) {
+          console.error("❌ Error fetching result_process IDs:", rpError);
         }
 
-        const { data: spcStatsData, error: spcStatsError } = await spcStatsQuery
-          .order("result_process.date", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // Obtener estadísticas SPC de la tabla filtradas por result_process_ids
+        let spcStatsData = null;
+        let spcStatsError = null;
+
+        if (resultProcessIds && resultProcessIds.length > 0) {
+          const ids = resultProcessIds.map(rp => rp.result_process_id);
+          
+          const { data, error } = await supabase
+            .from("spc_statistics")
+            .select("stats, result_process_id")
+            .eq(
+              "measurement_name",
+              `machine_${machineData.machine_id}_all_measurements`
+            )
+            .in("result_process_id", ids)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          spcStatsData = data;
+          spcStatsError = error;
+        }
 
         if (spcStatsError) {
           console.error("❌ Error fetching SPC stats:", spcStatsError);
