@@ -305,25 +305,25 @@ const Dashboard = () => {
           return;
         }
 
-        // Obtener estadísticas SPC de la tabla con filtro de fecha
+        // Obtener estadísticas SPC de la tabla con filtro de fecha basado en result_process.date
         let spcStatsQuery = supabase
           .from("spc_statistics")
-          .select("stats, created_at")
+          .select("stats, result_process!inner(date)")
           .eq(
             "measurement_name",
             `machine_${machineData.machine_id}_all_measurements`
           );
 
-        // Apply date filters to statistics
+        // Apply date filters to result_process.date
         if (fromDate) {
-          spcStatsQuery = spcStatsQuery.gte("created_at", fromDate);
+          spcStatsQuery = spcStatsQuery.gte("result_process.date", fromDate);
         }
         if (toDate) {
-          spcStatsQuery = spcStatsQuery.lt("created_at", toDate);
+          spcStatsQuery = spcStatsQuery.lt("result_process.date", toDate);
         }
 
         const { data: spcStatsData, error: spcStatsError } = await spcStatsQuery
-          .order("created_at", { ascending: false })
+          .order("result_process.date", { ascending: false })
           .limit(1)
           .maybeSingle();
 
