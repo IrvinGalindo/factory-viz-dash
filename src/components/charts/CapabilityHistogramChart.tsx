@@ -296,7 +296,10 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               <XAxis 
                 dataKey="midPoint" 
                 type="number"
-                domain={['dataMin - 0.01', 'dataMax + 0.01']}
+                domain={[
+                  (dataMin: number) => Math.min(dataMin, stats.lowerSpecLimit) - 0.02,
+                  (dataMax: number) => Math.max(dataMax, stats.upperSpecLimit) + 0.02
+                ]}
                 stroke="hsl(var(--foreground))"
                 fontSize={10}
                 tickFormatter={(value) => value.toFixed(4)}
