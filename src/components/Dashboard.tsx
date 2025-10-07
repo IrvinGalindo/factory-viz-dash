@@ -253,9 +253,19 @@ const Dashboard = () => {
           value: number;
           created_at: string;
           result_process_id: string;
+          process_id: string;
         }> = [];
 
+        // Track process_ids to avoid duplicates
+        const seenProcessIds = new Set<string>();
+
         processData.forEach((row: any) => {
+          // Skip if we've already processed this process_id
+          if (seenProcessIds.has(row.process_id)) {
+            console.warn("⚠️ Duplicate process_id detected:", row.process_id);
+            return;
+          }
+
           if (row.measurements && Array.isArray(row.measurements)) {
             row.measurements.forEach((measurement: any) => {
               if (
@@ -267,7 +277,9 @@ const Dashboard = () => {
                   value: Number(measurement.value),
                   created_at: row.created_at,
                   result_process_id: row.result_process_id,
+                  process_id: row.process_id,
                 });
+                seenProcessIds.add(row.process_id);
               }
             });
           }
@@ -282,8 +294,11 @@ const Dashboard = () => {
         console.log(
           "✅ Process values extracted:",
           processValues.length,
-          "records"
+          "records (unique process_ids:",
+          seenProcessIds.size,
+          ")"
         );
+        console.log("📝 Process IDs:", Array.from(seenProcessIds));
 
         // PASO 2: Obtener estadísticas desde spc_statistics
         // Primero obtenemos el machine_id de la máquina seleccionada
