@@ -6,6 +6,7 @@ interface CapabilityData {
   frequency: number;
   rangeStart: number;
   rangeEnd: number;
+  midPoint: number;
   normalValue?: number;
   isOutOfSpec?: boolean;
 }
@@ -68,16 +69,18 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   for (let i = 0; i < numBins; i++) {
     const rangeStart = minValue + (i * binWidth);
     const rangeEnd = rangeStart + binWidth;
+    const midPoint = (rangeStart + rangeEnd) / 2;
     const frequency = rawValues.filter(v => v >= rangeStart && (i === numBins - 1 ? v <= rangeEnd : v < rangeEnd)).length;
     
     // Verificar si este bin está fuera de especificación
     const isOutOfSpec = rangeEnd < stats.lowerSpecLimit || rangeStart > stats.upperSpecLimit;
     
     bins.push({
-      range: `${rangeStart.toFixed(3)}`,
+      range: `${rangeStart.toFixed(3)}-${rangeEnd.toFixed(3)}`,
       frequency,
       rangeStart,
       rangeEnd,
+      midPoint,
       isOutOfSpec
     });
   }
@@ -101,8 +104,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
 
   // Combinar datos del histograma con la curva normal
   const chartData = bins.map(bin => {
-    const midPoint = (bin.rangeStart + bin.rangeEnd) / 2;
-    const normalPoint = normalCurvePoints.find(p => Math.abs(p.x - midPoint) < step);
+    const normalPoint = normalCurvePoints.find(p => Math.abs(p.x - bin.midPoint) < step);
     
     return {
       ...bin,
@@ -189,15 +191,16 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         </CardHeader>
         <CardContent className="p-0">
           <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart data={chartData} margin={{ top: 30, right: 30, left: 30, bottom: 30 }}>
+            <ComposedChart data={chartData} margin={{ top: 30, right: 30, left: 30, bottom: 80 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               <XAxis 
-                dataKey="range" 
+                dataKey="midPoint" 
+                type="number"
+                domain={['dataMin - 0.1', 'dataMax + 0.1']}
                 stroke="hsl(var(--foreground))"
-                fontSize={10}
-                angle={-45}
-                textAnchor="end"
-                height={80}
+                fontSize={11}
+                tickFormatter={(value) => value.toFixed(3)}
+                label={{ value: 'Valor', position: 'insideBottom', offset: -5 }}
               />
               <YAxis 
                 stroke="hsl(var(--foreground))"
@@ -207,13 +210,13 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               
               {/* Reference lines for spec limits */}
               <ReferenceLine 
-                x={stats.upperSpecLimit.toFixed(3)} 
+                x={stats.upperSpecLimit} 
                 stroke="#dc2626" 
                 strokeWidth={3}
                 label={{ value: 'USL', position: 'top', fill: '#dc2626', fontSize: 12, fontWeight: 'bold' }}
               />
               <ReferenceLine 
-                x={stats.lowerSpecLimit.toFixed(3)} 
+                x={stats.lowerSpecLimit} 
                 stroke="#dc2626" 
                 strokeWidth={3}
                 label={{ value: 'LSL', position: 'top', fill: '#dc2626', fontSize: 12, fontWeight: 'bold' }}
@@ -221,14 +224,14 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               
               {/* Reference lines for control limits */}
               <ReferenceLine 
-                x={stats.ucl.toFixed(3)} 
+                x={stats.ucl} 
                 stroke="#ec4899" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 label={{ value: 'UCL', position: 'top', fill: '#ec4899', fontSize: 10 }}
               />
               <ReferenceLine 
-                x={stats.lcl.toFixed(3)} 
+                x={stats.lcl} 
                 stroke="#ec4899" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
@@ -237,7 +240,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               
               {/* Reference line for average/nominal */}
               <ReferenceLine 
-                x={stats.avg.toFixed(3)} 
+                x={stats.avg} 
                 stroke="#3b82f6" 
                 strokeWidth={2}
                 strokeDasharray="8 4"
