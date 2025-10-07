@@ -940,6 +940,10 @@ const Dashboard = () => {
                       <CardTitle>Histograma de Capacidad - Proceso {selectedProcess}</CardTitle>
                       <CardDescription>
                         Distribución de mediciones con límites de especificación y control
+                        <br />
+                        <span className="text-xs text-muted-foreground">
+                          Período: {format(dateRange.from, "dd/MM/yyyy", { locale: es })} - {format(dateRange.to, "dd/MM/yyyy", { locale: es })}
+                        </span>
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
