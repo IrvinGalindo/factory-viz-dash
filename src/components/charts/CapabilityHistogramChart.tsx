@@ -106,9 +106,15 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const chartData = bins.map(bin => {
     const normalPoint = normalCurvePoints.find(p => Math.abs(p.x - bin.midPoint) < step);
     
+    // Separar frecuencias dentro y fuera de spec
+    const withinSpec = bin.isOutOfSpec ? 0 : bin.frequency;
+    const outOfSpec = bin.isOutOfSpec ? bin.frequency : 0;
+    
     return {
       ...bin,
-      normalValue: normalPoint?.normalValue || 0
+      normalValue: normalPoint?.normalValue || 0,
+      withinSpec,
+      outOfSpec
     };
   });
 
@@ -247,16 +253,23 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 label={{ value: 'X̄', position: 'top', fill: '#3b82f6', fontSize: 12, fontWeight: 'bold' }}
               />
               
-              {/* Histogram bars */}
-              <Bar dataKey="frequency" name="Frecuencia">
-                {chartData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.isOutOfSpec ? '#ef4444' : '#22c55e'}
-                    opacity={0.7}
-                  />
-                ))}
-              </Bar>
+              {/* Histogram bars - Dentro de especificación */}
+              <Bar 
+                dataKey="withinSpec" 
+                stackId="spec"
+                name="Dentro de Spec"
+                fill="#22c55e"
+                opacity={0.7}
+              />
+              
+              {/* Histogram bars - Fuera de especificación */}
+              <Bar 
+                dataKey="outOfSpec" 
+                stackId="spec"
+                name="Fuera de Spec"
+                fill="#ef4444"
+                opacity={0.7}
+              />
               
               {/* Normal distribution curve */}
               <Line 
