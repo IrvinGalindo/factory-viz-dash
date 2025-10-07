@@ -296,11 +296,15 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               <XAxis 
                 dataKey="midPoint" 
                 type="number"
-                domain={['dataMin - 0.1', 'dataMax + 0.1']}
+                domain={['dataMin - 0.01', 'dataMax + 0.01']}
                 stroke="hsl(var(--foreground))"
-                fontSize={11}
-                tickFormatter={(value) => value.toFixed(3)}
-                label={{ value: 'Valor', position: 'insideBottom', offset: -5 }}
+                fontSize={10}
+                tickFormatter={(value) => value.toFixed(4)}
+                ticks={chartData.map(d => d.midPoint)}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                label={{ value: 'Valor', position: 'insideBottom', offset: -10 }}
               />
               <YAxis 
                 stroke="hsl(var(--foreground))"
