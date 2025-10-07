@@ -118,6 +118,11 @@ const calculateNormalDistribution = (x: number, mean: number, std: number): numb
 };
 
 export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogramChartProps) => {
+  // Log para debugging
+  console.log("📊 Histograma - Valores recibidos:", rawValues.length);
+  console.log("📊 Histograma - rawValues:", rawValues);
+  console.log("📊 Histograma - stats.sampleCount:", stats.sampleCount);
+  
   if (!rawValues || rawValues.length === 0) {
     return (
       <Card>
@@ -139,6 +144,8 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   // Número de bins usando la regla de Sturges
   const numBins = Math.ceil(Math.log2(rawValues.length) + 1);
   const binWidth = range / numBins;
+  
+  console.log("📊 Histograma - Número de bins calculados:", numBins);
 
   // Crear bins para el histograma
   const bins: CapabilityData[] = [];
@@ -269,7 +276,12 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
       {/* Histogram Chart */}
       <Card className="lg:col-span-3">
         <CardHeader>
-          <CardTitle className="text-base">Histograma de Capacidad del Proceso</CardTitle>
+          <CardTitle className="text-base">
+            Histograma de Capacidad del Proceso
+            <span className="ml-3 text-sm font-normal text-muted-foreground">
+              (Total de valores: {rawValues.length} | Barras del histograma: {numBins})
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <ResponsiveContainer width="100%" height={450}>
