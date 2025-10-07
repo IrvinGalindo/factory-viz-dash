@@ -933,31 +933,54 @@ const Dashboard = () => {
             {/* Charts Grid */}
             <div className="grid gap-6 md:grid-cols-2">
               {/* Capability Histogram Chart - Full Width */}
-              {spcData && (
+              {spcData && selectedProcess ? (
                 <div className="md:col-span-2">
-                  <CapabilityHistogramChart 
-                    rawValues={spcData.rawValues}
-                    stats={{
-                      cp: spcData.stats.cp,
-                      cpk: spcData.stats.cpk,
-                      pp: spcData.stats.pp,
-                      ppk: spcData.stats.ppk,
-                      avg: spcData.stats.avg,
-                      std: spcData.stats.std,
-                      stdWithin: spcData.stats.stdWithin,
-                      stdOverall: spcData.stats.stdOverall,
-                      ucl: spcData.stats.ucl,
-                      lcl: spcData.stats.lcl,
-                      upperSpecLimit: spcData.stats.specUpper,
-                      lowerSpecLimit: spcData.stats.specLower,
-                      nominal: spcData.stats.spec,
-                      sampleCount: spcData.stats.sampleCount,
-                      withinSpecCount: spcData.stats.sampleCount - spcData.stats.outOfSpecCount,
-                      outOfSpecCount: spcData.stats.outOfSpecCount,
-                    }}
-                  />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Histograma de Capacidad - Proceso {selectedProcess}</CardTitle>
+                      <CardDescription>
+                        Distribución de mediciones con límites de especificación y control
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <CapabilityHistogramChart 
+                        rawValues={spcData.rawValues}
+                        stats={{
+                          cp: spcData.stats.cp,
+                          cpk: spcData.stats.cpk,
+                          pp: spcData.stats.pp,
+                          ppk: spcData.stats.ppk,
+                          avg: spcData.stats.avg,
+                          std: spcData.stats.std,
+                          stdWithin: spcData.stats.stdWithin,
+                          stdOverall: spcData.stats.stdOverall,
+                          ucl: spcData.stats.ucl,
+                          lcl: spcData.stats.lcl,
+                          upperSpecLimit: spcData.stats.specUpper,
+                          lowerSpecLimit: spcData.stats.specLower,
+                          nominal: spcData.stats.spec,
+                          sampleCount: spcData.stats.sampleCount,
+                          withinSpecCount: spcData.stats.sampleCount - spcData.stats.outOfSpecCount,
+                          outOfSpecCount: spcData.stats.outOfSpecCount,
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
-              )}
+              ) : selectedProcess ? (
+                <div className="md:col-span-2">
+                  <Card>
+                    <CardContent className="flex items-center justify-center h-64">
+                      <div className="text-center text-muted-foreground">
+                        <div className="text-lg font-medium mb-2">No hay datos disponibles</div>
+                        <div className="text-sm">
+                          No se encontraron mediciones para el proceso {selectedProcess} en el rango de fechas seleccionado
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null}
 
               <Card>
                 <CardHeader>
