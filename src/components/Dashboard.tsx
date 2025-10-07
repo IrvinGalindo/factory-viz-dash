@@ -266,22 +266,30 @@ const Dashboard = () => {
             return;
           }
 
+          let matchedValue: number | null = null;
+
           if (row.measurements && Array.isArray(row.measurements)) {
-            row.measurements.forEach((measurement: any) => {
+            // Take ONLY the first matching measurement per row to avoid duplicates
+            for (const measurement of row.measurements) {
               if (
                 measurement.processNumber?.toString() ===
                   selectedProcess.toString() &&
                 measurement.value != null
               ) {
-                processValues.push({
-                  value: Number(measurement.value),
-                  created_at: row.created_at,
-                  result_process_id: row.result_process_id,
-                  process_id: row.process_id,
-                });
-                seenProcessIds.add(row.process_id);
+                matchedValue = Number(measurement.value);
+                break; // avoid multiple pushes for the same row
               }
+            }
+          }
+
+          if (matchedValue != null) {
+            processValues.push({
+              value: matchedValue,
+              created_at: row.created_at,
+              result_process_id: row.result_process_id,
+              process_id: row.process_id,
             });
+            seenProcessIds.add(row.process_id);
           }
         });
 
