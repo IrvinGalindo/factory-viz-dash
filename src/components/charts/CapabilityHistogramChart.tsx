@@ -95,9 +95,11 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
         <div className="border-t mt-2 pt-2 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Cpk:</span>
-            <span className="font-medium text-foreground">{stats.cpk.toFixed(3)}</span>
+            <span className="font-medium text-foreground">
+              {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
+            </span>
           </div>
-          {stats.ppk !== undefined && (
+          {stats.ppk != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Ppk:</span>
               <span className="font-medium text-foreground">{stats.ppk.toFixed(3)}</span>
@@ -221,22 +223,26 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
           <div className="grid grid-cols-1 gap-2 text-xs">
             <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
               <div className="font-semibold text-green-800 dark:text-green-200">Cp</div>
-              <div className="text-green-900 dark:text-green-100 text-lg">{stats.cp.toFixed(3)}</div>
+              <div className="text-green-900 dark:text-green-100 text-lg">
+                {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}
+              </div>
               <div className="text-xs text-muted-foreground">Capacidad del proceso</div>
             </div>
             <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
               <div className="font-semibold text-green-800 dark:text-green-200">Cpk</div>
-              <div className="text-green-900 dark:text-green-100 text-lg">{stats.cpk.toFixed(3)}</div>
+              <div className="text-green-900 dark:text-green-100 text-lg">
+                {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
+              </div>
               <div className="text-xs text-muted-foreground">Capacidad centrada</div>
             </div>
-            {stats.pp !== undefined && (
+            {stats.pp != null && (
               <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
                 <div className="font-semibold text-teal-800 dark:text-teal-200">Pp</div>
                 <div className="text-teal-900 dark:text-teal-100 text-lg">{stats.pp.toFixed(3)}</div>
                 <div className="text-xs text-muted-foreground">Desempeño del proceso</div>
               </div>
             )}
-            {stats.ppk !== undefined && (
+            {stats.ppk != null && (
               <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
                 <div className="font-semibold text-teal-800 dark:text-teal-200">Ppk</div>
                 <div className="text-teal-900 dark:text-teal-100 text-lg">{stats.ppk.toFixed(3)}</div>
