@@ -99,19 +99,23 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
             </div>
             <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
               <div className="font-semibold text-green-800 dark:text-green-200">Cp</div>
-              <div className="text-green-900 dark:text-green-100">{stats.cp.toFixed(3)}</div>
+              <div className="text-green-900 dark:text-green-100">
+                {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}
+              </div>
             </div>
             <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
               <div className="font-semibold text-green-800 dark:text-green-200">Cpk</div>
-              <div className="text-green-900 dark:text-green-100">{stats.cpk.toFixed(3)}</div>
+              <div className="text-green-900 dark:text-green-100">
+                {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
+              </div>
             </div>
-            {stats.pp !== undefined && (
+            {stats.pp != null && (
               <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
                 <div className="font-semibold text-teal-800 dark:text-teal-200">Pp</div>
                 <div className="text-teal-900 dark:text-teal-100">{stats.pp.toFixed(3)}</div>
               </div>
             )}
-            {stats.ppk !== undefined && (
+            {stats.ppk != null && (
               <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
                 <div className="font-semibold text-teal-800 dark:text-teal-200">Ppk</div>
                 <div className="text-teal-900 dark:text-teal-100">{stats.ppk.toFixed(3)}</div>
