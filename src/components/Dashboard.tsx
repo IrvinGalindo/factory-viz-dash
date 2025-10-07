@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { generateMockData } from "@/data/mockData";
-import { EfficiencyChart } from "@/components/charts/EfficiencyChart";
+import { CapabilityHistogramChart } from "@/components/charts/CapabilityHistogramChart";
 import { ProductionChart } from "@/components/charts/ProductionChart";
 import { StatusChart } from "@/components/charts/StatusChart";
 import { TemperatureChart } from "@/components/charts/TemperatureChart";
@@ -484,7 +484,11 @@ const Dashboard = () => {
         console.log("🎊 Final chart data:", chartData.length, "points");
         console.log("📊 Final statistics:", statisticsData);
 
-        setSpcData({ data: chartData, stats: statisticsData });
+        setSpcData({ 
+          data: chartData, 
+          stats: statisticsData,
+          rawValues: processValues.map(pv => pv.value)
+        });
       } catch (error) {
         console.error("💥 Error in fetchSPCData:", error);
         setSpcData(null);
@@ -928,17 +932,32 @@ const Dashboard = () => {
 
             {/* Charts Grid */}
             <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Eficiencia por Hora</CardTitle>
-                  <CardDescription>
-                    Porcentaje de eficiencia a lo largo del día
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <EfficiencyChart data={data.efficiency} />
-                </CardContent>
-              </Card>
+              {/* Capability Histogram Chart - Full Width */}
+              {spcData && (
+                <div className="md:col-span-2">
+                  <CapabilityHistogramChart 
+                    rawValues={spcData.rawValues}
+                    stats={{
+                      cp: spcData.stats.cp,
+                      cpk: spcData.stats.cpk,
+                      pp: spcData.stats.pp,
+                      ppk: spcData.stats.ppk,
+                      avg: spcData.stats.avg,
+                      std: spcData.stats.std,
+                      stdWithin: spcData.stats.stdWithin,
+                      stdOverall: spcData.stats.stdOverall,
+                      ucl: spcData.stats.ucl,
+                      lcl: spcData.stats.lcl,
+                      upperSpecLimit: spcData.stats.specUpper,
+                      lowerSpecLimit: spcData.stats.specLower,
+                      nominal: spcData.stats.spec,
+                      sampleCount: spcData.stats.sampleCount,
+                      withinSpecCount: spcData.stats.sampleCount - spcData.stats.outOfSpecCount,
+                      outOfSpecCount: spcData.stats.outOfSpecCount,
+                    }}
+                  />
+                </div>
+              )}
 
               <Card>
                 <CardHeader>
