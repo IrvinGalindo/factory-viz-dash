@@ -153,20 +153,32 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
     const rangeStart = minValue + (i * binWidth);
     const rangeEnd = rangeStart + binWidth;
     const midPoint = (rangeStart + rangeEnd) / 2;
-    const frequency = rawValues.filter(v => v >= rangeStart && (i === numBins - 1 ? v <= rangeEnd : v < rangeEnd)).length;
     
-    // Verificar si este bin está fuera de especificación
-    const isOutOfSpec = rangeEnd < stats.lowerSpecLimit || rangeStart > stats.upperSpecLimit;
+    // Obtener los valores que caen en este bin
+    const valuesInBin = rawValues.filter(v => 
+      v >= rangeStart && (i === numBins - 1 ? v <= rangeEnd : v < rangeEnd)
+    );
+    
+    // Contar cuántos están dentro y fuera de especificación
+    const withinSpecInBin = valuesInBin.filter(v => 
+      v >= stats.lowerSpecLimit && v <= stats.upperSpecLimit
+    ).length;
+    
+    const outOfSpecInBin = valuesInBin.length - withinSpecInBin;
     
     bins.push({
       range: `${rangeStart.toFixed(3)}-${rangeEnd.toFixed(3)}`,
-      frequency,
+      frequency: valuesInBin.length,
       rangeStart,
       rangeEnd,
       midPoint,
-      isOutOfSpec
+      withinSpec: withinSpecInBin,
+      outOfSpec: outOfSpecInBin,
+      isOutOfSpec: outOfSpecInBin > 0 && withinSpecInBin === 0 // Solo si TODOS están fuera
     });
   }
+  
+  console.log("📊 Histograma - Bins creados:", bins);
 
   // Calcular valores de la curva normal
   const normalCurvePoints: any[] = [];
@@ -189,15 +201,9 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const chartData = bins.map(bin => {
     const normalPoint = normalCurvePoints.find(p => Math.abs(p.x - bin.midPoint) < step);
     
-    // Separar frecuencias dentro y fuera de spec
-    const withinSpec = bin.isOutOfSpec ? 0 : bin.frequency;
-    const outOfSpec = bin.isOutOfSpec ? bin.frequency : 0;
-    
     return {
       ...bin,
-      normalValue: normalPoint?.normalValue || 0,
-      withinSpec,
-      outOfSpec
+      normalValue: normalPoint?.normalValue || 0
     };
   });
 
