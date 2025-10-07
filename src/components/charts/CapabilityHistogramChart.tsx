@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Cell, Line, LineChart, ComposedChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Cell, Line, LineChart, ComposedChart, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface CapabilityData {
@@ -9,6 +9,8 @@ interface CapabilityData {
   midPoint: number;
   normalValue?: number;
   isOutOfSpec?: boolean;
+  withinSpec?: number;
+  outOfSpec?: number;
 }
 
 interface CapabilityStats {
@@ -34,6 +36,80 @@ interface CapabilityHistogramChartProps {
   rawValues: number[];
   stats: CapabilityStats;
 }
+
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, stats }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    
+    return (
+      <div className="bg-background border border-border rounded-lg shadow-lg p-4 text-sm">
+        <div className="font-semibold mb-2 text-foreground border-b pb-2">
+          Rango: {data.rangeStart.toFixed(4)} - {data.rangeEnd.toFixed(4)}
+        </div>
+        
+        <div className="space-y-1.5">
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">Frecuencia Total:</span>
+            <span className="font-semibold text-foreground">{data.frequency}</span>
+          </div>
+          
+          <div className="flex justify-between gap-4">
+            <span className="text-green-600 dark:text-green-400">Dentro de Spec:</span>
+            <span className="font-semibold text-green-700 dark:text-green-300">{data.withinSpec}</span>
+          </div>
+          
+          <div className="flex justify-between gap-4">
+            <span className="text-red-600 dark:text-red-400">Fuera de Spec:</span>
+            <span className="font-semibold text-red-700 dark:text-red-300">{data.outOfSpec}</span>
+          </div>
+        </div>
+        
+        <div className="border-t mt-2 pt-2 space-y-1 text-xs">
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">LSL:</span>
+            <span className="text-red-600 dark:text-red-400 font-medium">{stats.lowerSpecLimit.toFixed(4)}</span>
+          </div>
+          
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">Promedio (X̄):</span>
+            <span className="text-blue-600 dark:text-blue-400 font-medium">{stats.avg.toFixed(4)}</span>
+          </div>
+          
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">USL:</span>
+            <span className="text-red-600 dark:text-red-400 font-medium">{stats.upperSpecLimit.toFixed(4)}</span>
+          </div>
+          
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">LCL:</span>
+            <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.lcl.toFixed(4)}</span>
+          </div>
+          
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">UCL:</span>
+            <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.ucl.toFixed(4)}</span>
+          </div>
+        </div>
+        
+        <div className="border-t mt-2 pt-2 text-xs">
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">Cpk:</span>
+            <span className="font-medium text-foreground">{stats.cpk.toFixed(3)}</span>
+          </div>
+          {stats.ppk !== undefined && (
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Ppk:</span>
+              <span className="font-medium text-foreground">{stats.ppk.toFixed(3)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  return null;
+};
 
 // Función para calcular la distribución normal
 const calculateNormalDistribution = (x: number, mean: number, std: number): number => {
@@ -213,6 +289,9 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 fontSize={12}
                 label={{ value: 'Frecuencia', angle: -90, position: 'insideLeft' }}
               />
+              
+              {/* Custom Tooltip */}
+              <Tooltip content={<CustomTooltip stats={stats} />} />
               
               {/* Reference lines for spec limits */}
               <ReferenceLine 
