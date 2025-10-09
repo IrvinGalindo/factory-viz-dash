@@ -89,6 +89,14 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
               <div className="font-semibold text-blue-800 dark:text-blue-200">Promedio</div>
               <div className="text-blue-900 dark:text-blue-100">{stats.avg.toFixed(3)}</div>
             </div>
+            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded">
+              <div className="font-semibold text-purple-800 dark:text-purple-200">Min</div>
+              <div className="text-purple-900 dark:text-purple-100">{stats.min.toFixed(3)}</div>
+            </div>
+            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded">
+              <div className="font-semibold text-purple-800 dark:text-purple-200">Max</div>
+              <div className="text-purple-900 dark:text-purple-100">{stats.max.toFixed(3)}</div>
+            </div>
             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
               <div className="font-semibold">Variación Instantánea</div>
               <div>{(stats.stdWithin ?? stats.std).toFixed(3)}</div>

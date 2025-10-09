@@ -874,32 +874,50 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     <SPCChart data={spcData.data} stats={spcData.stats} />
                     {/* Info adicional */}
-                    <div className="grid grid-cols-4 gap-4 text-sm">
-                      <div className="bg-muted/50 p-2 rounded">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                      <div className="bg-muted/50 p-3 rounded">
                         <div className="font-semibold">Puntos de datos:</div>
-                        <div>{spcData.stats.sampleCount}</div>
+                        <div className="text-lg">{spcData.data.length}</div>
                       </div>
-                      <div className="bg-muted/50 p-2 rounded">
-                        <div className="font-semibold">Fuera de Spec:</div>
-                        <div>{spcData.stats.outOfSpecCount}</div>
-                      </div>
-                      <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
+                      <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded">
                         <div className="font-semibold text-yellow-800 dark:text-yellow-200">
                           No Conformes:
                         </div>
                         <div className="text-yellow-900 dark:text-yellow-100">
-                          {spcData.stats.outOfSpecCount}/
-                          {spcData.stats.sampleCount} (
-                          {(
-                            (spcData.stats.outOfSpecCount /
-                              spcData.stats.sampleCount) *
-                            100
-                          ).toFixed(1)}
-                          %)
+                          {spcData.stats.outOfSpecCount}/{spcData.data.length} (
+                          {spcData.data.length > 0 
+                            ? ((spcData.stats.outOfSpecCount / spcData.data.length) * 100).toFixed(1)
+                            : '0.0'}%)
+                        </div>
+                      </div>
+                      <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded">
+                        <div className="font-semibold text-green-800 dark:text-green-200">
+                          Dentro de Spec
+                        </div>
+                        <div className="text-green-900 dark:text-green-100">
+                          {spcData.data.length > 0 
+                            ? (((spcData.data.length - spcData.stats.outOfSpecCount) / spcData.data.length) * 100).toFixed(1)
+                            : '0.0'}%
+                        </div>
+                        <div className="text-xs text-green-800 dark:text-green-200 mt-1">
+                          {spcData.data.length - spcData.stats.outOfSpecCount} de {spcData.data.length}
+                        </div>
+                      </div>
+                      <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded">
+                        <div className="font-semibold text-red-800 dark:text-red-200">
+                          Fuera de Spec
+                        </div>
+                        <div className="text-red-900 dark:text-red-100">
+                          {spcData.data.length > 0 
+                            ? ((spcData.stats.outOfSpecCount / spcData.data.length) * 100).toFixed(1)
+                            : '0.0'}%
+                        </div>
+                        <div className="text-xs text-red-800 dark:text-red-200 mt-1">
+                          {spcData.stats.outOfSpecCount} de {spcData.data.length}
                         </div>
                       </div>
                       <div
-                        className={`p-2 rounded ${
+                        className={`p-3 rounded ${
                           spcData.stats.status === "Conforme"
                             ? "bg-green-100 dark:bg-green-900/30"
                             : "bg-red-100 dark:bg-red-900/30"
