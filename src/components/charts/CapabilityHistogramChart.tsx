@@ -234,6 +234,21 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const withinSpecPercentage = ((stats.withinSpecCount / stats.sampleCount) * 100).toFixed(1);
   const outOfSpecPercentage = ((stats.outOfSpecCount / stats.sampleCount) * 100).toFixed(1);
 
+  // Calcular el dominio del eje X para asegurar que TODOS los límites sean visibles
+  const allLimits = [
+    stats.lowerSpecLimit,
+    stats.upperSpecLimit,
+    stats.lcl,
+    stats.ucl,
+    stats.avg,
+    minValue,
+    maxValue
+  ];
+  const absoluteMin = Math.min(...allLimits);
+  const absoluteMax = Math.max(...allLimits);
+  const domainRange = absoluteMax - absoluteMin;
+  const domainPadding = domainRange * 0.1; // 10% de padding en cada lado
+
   return (
     <div className="grid grid-cols-1 gap-6">
       {/* Histogram Chart */}
@@ -253,10 +268,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               <XAxis 
                 dataKey="midPoint" 
                 type="number"
-                domain={[
-                  (dataMin: number) => Math.min(dataMin, stats.lowerSpecLimit) - 0.02,
-                  (dataMax: number) => Math.max(dataMax, stats.upperSpecLimit) + 0.02
-                ]}
+                domain={[absoluteMin - domainPadding, absoluteMax + domainPadding]}
                 stroke="hsl(var(--foreground))"
                 fontSize={10}
                 tickFormatter={(value) => value.toFixed(4)}
