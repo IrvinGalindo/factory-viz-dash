@@ -92,19 +92,41 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
           </div>
         </div>
         
-        <div className="border-t mt-2 pt-2 text-xs">
+        <div className="border-t mt-2 pt-2 text-xs space-y-1">
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">Cp:</span>
+            <span className="font-medium text-foreground">
+              {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}
+            </span>
+          </div>
+          
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Cpk:</span>
             <span className="font-medium text-foreground">
               {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
             </span>
           </div>
+          
+          {stats.pp != null && (
+            <div className="flex justify-between gap-4">
+              <span className="text-muted-foreground">Pp:</span>
+              <span className="font-medium text-foreground">{stats.pp.toFixed(3)}</span>
+            </div>
+          )}
+          
           {stats.ppk != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Ppk:</span>
               <span className="font-medium text-foreground">{stats.ppk.toFixed(3)}</span>
             </div>
           )}
+          
+          <div className="flex justify-between gap-4">
+            <span className="text-muted-foreground">σ (Desv. Estándar):</span>
+            <span className="font-medium text-foreground">
+              {(stats.stdOverall || stats.std).toFixed(4)}
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -213,80 +235,9 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const outOfSpecPercentage = ((stats.outOfSpecCount / stats.sampleCount) * 100).toFixed(1);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Statistics Panel */}
-      <Card className="lg:col-span-1">
-        <CardHeader>
-          <CardTitle className="text-sm">Índices de Capacidad</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 gap-2 text-xs">
-            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
-              <div className="font-semibold text-green-800 dark:text-green-200">Cp</div>
-              <div className="text-green-900 dark:text-green-100 text-lg">
-                {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}
-              </div>
-              <div className="text-xs text-muted-foreground">Capacidad del proceso</div>
-            </div>
-            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
-              <div className="font-semibold text-green-800 dark:text-green-200">Cpk</div>
-              <div className="text-green-900 dark:text-green-100 text-lg">
-                {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
-              </div>
-              <div className="text-xs text-muted-foreground">Capacidad centrada</div>
-            </div>
-            {stats.pp != null && (
-              <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
-                <div className="font-semibold text-teal-800 dark:text-teal-200">Pp</div>
-                <div className="text-teal-900 dark:text-teal-100 text-lg">{stats.pp.toFixed(3)}</div>
-                <div className="text-xs text-muted-foreground">Desempeño del proceso</div>
-              </div>
-            )}
-            {stats.ppk != null && (
-              <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
-                <div className="font-semibold text-teal-800 dark:text-teal-200">Ppk</div>
-                <div className="text-teal-900 dark:text-teal-100 text-lg">{stats.ppk.toFixed(3)}</div>
-                <div className="text-xs text-muted-foreground">Desempeño centrado</div>
-              </div>
-            )}
-            
-            <div className="border-t pt-2 mt-2">
-              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded mb-2">
-                <div className="font-semibold text-blue-800 dark:text-blue-200">μ (Promedio)</div>
-                <div className="text-blue-900 dark:text-blue-100">{stats.avg.toFixed(4)}</div>
-              </div>
-              <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded mb-2">
-                <div className="font-semibold">σ (Desv. Estándar)</div>
-                <div>{(stats.stdOverall || stats.std).toFixed(4)}</div>
-              </div>
-            </div>
-
-            <div className="border-t pt-2 mt-2">
-              <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded mb-1">
-                <div className="font-semibold text-green-700 dark:text-green-300">Dentro de Spec</div>
-                <div className="text-lg font-bold text-green-800 dark:text-green-200">
-                  {withinSpecPercentage}%
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {stats.withinSpecCount} de {stats.sampleCount}
-                </div>
-              </div>
-              <div className="bg-red-50 dark:bg-red-900/20 p-2 rounded">
-                <div className="font-semibold text-red-700 dark:text-red-300">Fuera de Spec</div>
-                <div className="text-lg font-bold text-red-800 dark:text-red-200">
-                  {outOfSpecPercentage}%
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {stats.outOfSpecCount} de {stats.sampleCount}
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+    <div className="grid grid-cols-1 gap-6">
       {/* Histogram Chart */}
-      <Card className="lg:col-span-3">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-base">
             Histograma de Capacidad del Proceso
