@@ -1,5 +1,6 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Brush } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
 
 interface SPCData {
   point: number;
@@ -42,6 +43,8 @@ interface SPCChartProps {
 }
 
 export const SPCChart = ({ data, stats }: SPCChartProps) => {
+  const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null);
+
   // Show message when no data is available - FIXED CONDITION
   if (!data || data.length === 0 || !stats) {
     return (
@@ -105,30 +108,6 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
               <div className="font-semibold">Variación Total</div>
               <div>{(stats.stdOverall ?? stats.std).toFixed(3)}</div>
             </div>
-            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
-              <div className="font-semibold text-green-800 dark:text-green-200">Cp</div>
-              <div className="text-green-900 dark:text-green-100">
-                {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}
-              </div>
-            </div>
-            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
-              <div className="font-semibold text-green-800 dark:text-green-200">Cpk</div>
-              <div className="text-green-900 dark:text-green-100">
-                {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
-              </div>
-            </div>
-            {stats.pp != null && (
-              <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
-                <div className="font-semibold text-teal-800 dark:text-teal-200">Pp</div>
-                <div className="text-teal-900 dark:text-teal-100">{stats.pp.toFixed(3)}</div>
-              </div>
-            )}
-            {stats.ppk != null && (
-              <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
-                <div className="font-semibold text-teal-800 dark:text-teal-200">Ppk</div>
-                <div className="text-teal-900 dark:text-teal-100">{stats.ppk.toFixed(3)}</div>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -137,12 +116,16 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
       <Card className="lg:col-span-3">
         <CardContent className="p-0">
           <ResponsiveContainer width="100%" height={450}>
-            <LineChart data={data} margin={{ top: 30, right: 30, left: 30, bottom: 30 }}>
+            <LineChart 
+              data={data} 
+              margin={{ top: 30, right: 30, left: 30, bottom: 50 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               <XAxis 
                 dataKey="point" 
                 stroke="hsl(var(--foreground))"
                 fontSize={12}
+                domain={zoomDomain || undefined}
               />
               <YAxis 
                 stroke="hsl(var(--foreground))"
@@ -156,13 +139,25 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
                   borderRadius: '6px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
-                formatter={(value, name) => {
-                  if (name === "Valores Actuales") {
-                    return [`${value}`, name];
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-background border border-border rounded-md p-3 shadow-lg">
+                        <p className="font-semibold mb-2">Punto: {payload[0].payload.point}</p>
+                        <p className="text-sm">Valor: {payload[0].value}</p>
+                        <div className="mt-2 pt-2 border-t border-border space-y-1">
+                          <p className="text-xs text-muted-foreground">Cp: {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}</p>
+                          {stats.pp != null && <p className="text-xs text-muted-foreground">Pp: {stats.pp.toFixed(3)}</p>}
+                          <p className="text-xs text-muted-foreground">Desv. Estándar: {stats.std.toFixed(3)}</p>
+                          <p className="text-xs text-muted-foreground">UCL: {stats.ucl.toFixed(3)}</p>
+                          <p className="text-xs text-muted-foreground">LCL: {stats.lcl.toFixed(3)}</p>
+                          <p className="text-xs text-muted-foreground">Promedio: {stats.avg.toFixed(3)}</p>
+                        </div>
+                      </div>
+                    );
                   }
-                  return [value, name];
+                  return null;
                 }}
-                labelFormatter={(label) => `Punto: ${label}`}
               />
               <Legend />
               
@@ -209,6 +204,19 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
                 dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6, fill: '#22c55e', stroke: '#16a34a', strokeWidth: 2 }}
                 name="Valores Actuales"
+              />
+              
+              {/* Brush for zoom functionality */}
+              <Brush 
+                dataKey="point" 
+                height={30} 
+                stroke="hsl(var(--primary))"
+                fill="hsl(var(--muted))"
+                onChange={(e) => {
+                  if (e && e.startIndex !== undefined && e.endIndex !== undefined) {
+                    setZoomDomain([e.startIndex + 1, e.endIndex + 1]);
+                  }
+                }}
               />
             </LineChart>
           </ResponsiveContainer>
