@@ -34,6 +34,7 @@ import { ProductionChart } from "@/components/charts/ProductionChart";
 import { StatusChart } from "@/components/charts/StatusChart";
 import { TemperatureChart } from "@/components/charts/TemperatureChart";
 import { SPCChart } from "@/components/charts/SPCChart";
+import { SChart } from "@/components/charts/SChart";
 import {
   AlertCircle,
   CheckCircle,
@@ -502,7 +503,12 @@ const Dashboard = () => {
         setSpcData({ 
           data: chartData, 
           stats: statisticsData,
-          rawValues: processValues.map(pv => pv.value)
+          rawValues: processValues.map(pv => pv.value),
+          subgroups: spcStats?.subgroups || null,
+          processInfo: {
+            processNumber: selectedProcess,
+            item: spcStats?.item || ""
+          }
         });
       } catch (error) {
         console.error("💥 Error in fetchSPCData:", error);
@@ -1016,6 +1022,17 @@ const Dashboard = () => {
                       </div>
                     </CardContent>
                   </Card>
+                </div>
+              ) : null}
+
+              {/* S Chart - Control de Variabilidad */}
+              {spcData && selectedProcess && spcData.subgroups && spcData.subgroups.length > 0 ? (
+                <div className="md:col-span-2">
+                  <SChart 
+                    subgroups={spcData.subgroups}
+                    processName={`Proceso ${selectedProcess}`}
+                    item={spcData.processInfo?.item}
+                  />
                 </div>
               ) : null}
 
