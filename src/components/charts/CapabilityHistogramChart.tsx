@@ -45,7 +45,7 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
     return (
       <div className="bg-background border border-border rounded-lg shadow-lg p-4 text-sm">
         <div className="font-semibold mb-2 text-foreground border-b pb-2">
-          Rango: {data.rangeStart.toFixed(4)} - {data.rangeEnd.toFixed(4)}
+          Rango: {data.rangeStart} - {data.rangeEnd}
         </div>
         
         <div className="space-y-1.5">
@@ -68,27 +68,27 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
         <div className="border-t mt-2 pt-2 space-y-1 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">LSL:</span>
-            <span className="text-red-600 dark:text-red-400 font-medium">{stats.lowerSpecLimit.toFixed(4)}</span>
+            <span className="text-red-600 dark:text-red-400 font-medium">{stats.lowerSpecLimit}</span>
           </div>
           
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Promedio (X̄):</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">{stats.avg.toFixed(4)}</span>
+            <span className="text-blue-600 dark:text-blue-400 font-medium">{stats.avg}</span>
           </div>
           
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">USL:</span>
-            <span className="text-red-600 dark:text-red-400 font-medium">{stats.upperSpecLimit.toFixed(4)}</span>
+            <span className="text-red-600 dark:text-red-400 font-medium">{stats.upperSpecLimit}</span>
           </div>
           
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">LCL:</span>
-            <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.lcl.toFixed(4)}</span>
+            <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.lcl}</span>
           </div>
           
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">UCL:</span>
-            <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.ucl.toFixed(4)}</span>
+            <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.ucl}</span>
           </div>
         </div>
         
@@ -96,35 +96,35 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Cp:</span>
             <span className="font-medium text-foreground">
-              {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}
+              {stats.cp != null ? stats.cp : 'N/A'}
             </span>
           </div>
           
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Cpk:</span>
             <span className="font-medium text-foreground">
-              {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
+              {stats.cpk != null ? stats.cpk : 'N/A'}
             </span>
           </div>
           
           {stats.pp != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Pp:</span>
-              <span className="font-medium text-foreground">{stats.pp.toFixed(3)}</span>
+              <span className="font-medium text-foreground">{stats.pp}</span>
             </div>
           )}
           
           {stats.ppk != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Ppk:</span>
-              <span className="font-medium text-foreground">{stats.ppk.toFixed(3)}</span>
+              <span className="font-medium text-foreground">{stats.ppk}</span>
             </div>
           )}
           
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">σ (Desv. Estándar):</span>
             <span className="font-medium text-foreground">
-              {(stats.stdOverall || stats.std).toFixed(4)}
+              {stats.stdOverall || stats.std}
             </span>
           </div>
         </div>
@@ -191,7 +191,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
     const outOfSpecInBin = valuesInBin.length - withinSpecInBin;
     
     bins.push({
-      range: `${rangeStart.toFixed(3)}-${rangeEnd.toFixed(3)}`,
+      range: `${rangeStart}-${rangeEnd}`,
       frequency: valuesInBin.length,
       rangeStart,
       rangeEnd,
@@ -271,7 +271,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 domain={[absoluteMin - domainPadding, absoluteMax + domainPadding]}
                 stroke="hsl(var(--foreground))"
                 fontSize={10}
-                tickFormatter={(value) => value.toFixed(4)}
+                tickFormatter={(value) => value}
                 ticks={chartData.map(d => d.midPoint)}
                 angle={-45}
                 textAnchor="end"

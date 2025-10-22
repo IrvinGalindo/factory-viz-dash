@@ -59,20 +59,20 @@ const CustomTooltip = ({ active, payload, sBar, uclS, lclS }: any) => {
         <div className="space-y-1">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Desviación Estándar (s):</span>
-            <span className="font-mono text-foreground">{data.s.toFixed(4)}</span>
+            <span className="font-mono text-foreground">{data.s}</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">s̄ (Promedio):</span>
-            <span className="font-mono text-foreground">{sBar.toFixed(4)}</span>
+            <span className="font-mono text-foreground">{sBar}</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">UCLs:</span>
-            <span className="font-mono text-foreground">{uclS.toFixed(4)}</span>
+            <span className="font-mono text-foreground">{uclS}</span>
           </div>
           {lclS > 0 && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">LCLs:</span>
-              <span className="font-mono text-foreground">{lclS.toFixed(4)}</span>
+              <span className="font-mono text-foreground">{lclS}</span>
             </div>
           )}
           {data.isOutOfControl && (
@@ -180,15 +180,15 @@ export const SChart = ({ subgroups, processName = "Proceso", item = "" }: SChart
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">s̄ (Promedio)</p>
-            <p className="text-lg font-semibold">{sBar.toFixed(4)}</p>
+            <p className="text-lg font-semibold">{sBar}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">UCLs (Límite Superior)</p>
-            <p className="text-lg font-semibold text-destructive">{uclS.toFixed(4)}</p>
+            <p className="text-lg font-semibold text-destructive">{uclS}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">LCLs (Límite Inferior)</p>
-            <p className="text-lg font-semibold text-primary">{lclS > 0 ? lclS.toFixed(4) : '0.0000'}</p>
+            <p className="text-lg font-semibold text-primary">{lclS > 0 ? lclS : 0}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Puntos Fuera de Control</p>
