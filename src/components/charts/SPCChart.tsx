@@ -71,62 +71,62 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
             </div>
             <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded">
               <div className="font-semibold text-red-800 dark:text-red-200">Spec Upper</div>
-              <div className="text-red-900 dark:text-red-100">{stats.specUpper.toFixed(3)}</div>
+              <div className="text-red-900 dark:text-red-100">{stats.specUpper}</div>
             </div>
             <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded">
               <div className="font-semibold text-red-800 dark:text-red-200">Spec Lower</div>
-              <div className="text-red-900 dark:text-red-100">{stats.specLower.toFixed(3)}</div>
+              <div className="text-red-900 dark:text-red-100">{stats.specLower}</div>
             </div>
             <div className="bg-pink-100 dark:bg-pink-900/30 p-2 rounded">
               <div className="font-semibold text-pink-800 dark:text-pink-200">UCL</div>
-              <div className="text-pink-900 dark:text-pink-100">{stats.ucl.toFixed(3)}</div>
+              <div className="text-pink-900 dark:text-pink-100">{stats.ucl}</div>
             </div>
             <div className="bg-pink-100 dark:bg-pink-900/30 p-2 rounded">
               <div className="font-semibold text-pink-800 dark:text-pink-200">LCL</div>
-              <div className="text-pink-900 dark:text-pink-100">{stats.lcl.toFixed(3)}</div>
+              <div className="text-pink-900 dark:text-pink-100">{stats.lcl}</div>
             </div>
             <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded">
               <div className="font-semibold text-blue-800 dark:text-blue-200">Promedio</div>
-              <div className="text-blue-900 dark:text-blue-100">{stats.avg.toFixed(3)}</div>
+              <div className="text-blue-900 dark:text-blue-100">{stats.avg}</div>
             </div>
             <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded">
               <div className="font-semibold text-purple-800 dark:text-purple-200">Min</div>
-              <div className="text-purple-900 dark:text-purple-100">{stats.min.toFixed(3)}</div>
+              <div className="text-purple-900 dark:text-purple-100">{stats.min}</div>
             </div>
             <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded">
               <div className="font-semibold text-purple-800 dark:text-purple-200">Max</div>
-              <div className="text-purple-900 dark:text-purple-100">{stats.max.toFixed(3)}</div>
+              <div className="text-purple-900 dark:text-purple-100">{stats.max}</div>
             </div>
             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
               <div className="font-semibold">Variación Instantánea</div>
-              <div>{(stats.stdWithin ?? stats.std).toFixed(3)}</div>
+              <div>{stats.stdWithin ?? stats.std}</div>
             </div>
             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
               <div className="font-semibold">Variación Total</div>
-              <div>{(stats.stdOverall ?? stats.std).toFixed(3)}</div>
+              <div>{stats.stdOverall ?? stats.std}</div>
             </div>
             <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
               <div className="font-semibold text-green-800 dark:text-green-200">Cp</div>
               <div className="text-green-900 dark:text-green-100">
-                {stats.cp != null ? stats.cp.toFixed(3) : 'N/A'}
+                {stats.cp != null ? stats.cp : 'N/A'}
               </div>
             </div>
             <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded">
               <div className="font-semibold text-green-800 dark:text-green-200">Cpk</div>
               <div className="text-green-900 dark:text-green-100">
-                {stats.cpk != null ? stats.cpk.toFixed(3) : 'N/A'}
+                {stats.cpk != null ? stats.cpk : 'N/A'}
               </div>
             </div>
             {stats.pp != null && (
               <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
                 <div className="font-semibold text-teal-800 dark:text-teal-200">Pp</div>
-                <div className="text-teal-900 dark:text-teal-100">{stats.pp.toFixed(3)}</div>
+                <div className="text-teal-900 dark:text-teal-100">{stats.pp}</div>
               </div>
             )}
             {stats.ppk != null && (
               <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded">
                 <div className="font-semibold text-teal-800 dark:text-teal-200">Ppk</div>
-                <div className="text-teal-900 dark:text-teal-100">{stats.ppk.toFixed(3)}</div>
+                <div className="text-teal-900 dark:text-teal-100">{stats.ppk}</div>
               </div>
             )}
           </div>
@@ -219,23 +219,23 @@ export const SPCChart = ({ data, stats }: SPCChartProps) => {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-red-600"></div>
-              <span>Spec Upper: {stats.specUpper.toFixed(3)}</span>
+              <span>Spec Upper: {stats.specUpper}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-red-600"></div>
-              <span>Spec Lower: {stats.specLower.toFixed(3)}</span>
+              <span>Spec Lower: {stats.specLower}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-pink-500 border-dashed border-t-2 border-pink-500" style={{borderStyle: 'dashed'}}></div>
-              <span>UCL: {stats.ucl.toFixed(3)}</span>
+              <span>UCL: {stats.ucl}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-pink-500 border-dashed border-t-2 border-pink-500" style={{borderStyle: 'dashed'}}></div>
-              <span>LCL: {stats.lcl.toFixed(3)}</span>
+              <span>LCL: {stats.lcl}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-blue-500" style={{backgroundImage: 'linear-gradient(to right, #3b82f6 50%, transparent 50%)', backgroundSize: '8px 2px'}}></div>
-              <span>Promedio: {stats.avg.toFixed(3)}</span>
+              <span>Promedio: {stats.avg}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-green-500"></div>
