@@ -311,7 +311,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         </CardHeader>
         <CardContent className="p-0">
           <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart data={chartData} margin={{ top: 30, right: 30, left: 30, bottom: 80 }} barCategoryGap="10%">
+            <ComposedChart data={chartData} margin={{ top: 30, right: 30, left: 30, bottom: 80 }} barCategoryGap="5%">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               <XAxis 
                 dataKey="midPoint" 
@@ -381,7 +381,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Dentro de Spec"
                 fill="#22c55e"
                 opacity={0.7}
-                maxBarSize={60}
+                maxBarSize={80}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#22c55e'} />
@@ -395,7 +395,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Fuera de Spec"
                 fill="#ef4444"
                 opacity={0.7}
-                maxBarSize={60}
+                maxBarSize={80}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#ef4444'} />
