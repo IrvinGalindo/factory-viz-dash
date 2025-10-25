@@ -320,7 +320,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 stroke="hsl(var(--foreground))"
                 fontSize={10}
                 tickFormatter={(value) => value}
-                ticks={chartData.map(d => d.midPoint)}
+                ticks={bins.map(d => d.midPoint)}
                 angle={-45}
                 textAnchor="end"
                 height={80}
@@ -381,7 +381,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Dentro de Spec"
                 fill="#22c55e"
                 opacity={0.7}
-                barSize={30}
+                barSize={60}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#22c55e'} />
@@ -395,7 +395,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Fuera de Spec"
                 fill="#ef4444"
                 opacity={0.7}
-                barSize={30}
+                barSize={60}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#ef4444'} />
