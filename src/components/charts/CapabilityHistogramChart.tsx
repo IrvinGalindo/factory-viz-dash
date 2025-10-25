@@ -204,14 +204,21 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   
   console.log("📊 Histograma - Bins creados:", bins);
 
-  // Calcular valores de la curva normal
+  // Calcular el rango extendido para la curva normal (4 desviaciones estándar en cada lado)
+  const std = stats.stdOverall || stats.std;
+  const curveMin = stats.avg - (4 * std);
+  const curveMax = stats.avg + (4 * std);
+  const curveRange = curveMax - curveMin;
+  
+  // Calcular valores de la curva normal con rango extendido
   const normalCurvePoints: any[] = [];
-  const step = range / 100;
+  const curveSteps = 150; // Más puntos para una curva más suave
+  const curveStep = curveRange / curveSteps;
   const maxFrequency = Math.max(...bins.map(b => b.frequency));
   
-  for (let i = 0; i <= 100; i++) {
-    const x = minValue + (i * step);
-    const normalValue = calculateNormalDistribution(x, stats.avg, stats.stdOverall || stats.std);
+  for (let i = 0; i <= curveSteps; i++) {
+    const x = curveMin + (i * curveStep);
+    const normalValue = calculateNormalDistribution(x, stats.avg, std);
     // Escalar la curva normal para que se ajuste al histograma
     const scaledValue = (normalValue * maxFrequency * binWidth * rawValues.length);
     
@@ -222,19 +229,58 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   }
 
   // Combinar datos del histograma con la curva normal
-  const chartData = bins.map(bin => {
-    const normalPoint = normalCurvePoints.find(p => Math.abs(p.x - bin.midPoint) < step);
+  // Primero, agregar puntos para la curva que están fuera del rango de los bins
+  const chartData: any[] = [];
+  
+  // Agregar puntos de la curva antes del primer bin
+  normalCurvePoints
+    .filter(p => p.x < bins[0].rangeStart)
+    .forEach(point => {
+      chartData.push({
+        range: `${point.x}`,
+        frequency: 0,
+        rangeStart: point.x,
+        rangeEnd: point.x,
+        midPoint: point.x,
+        withinSpec: 0,
+        outOfSpec: 0,
+        normalValue: point.normalValue,
+        isExtended: true // Marcador para saber que es parte de la extensión
+      });
+    });
+  
+  // Agregar bins con sus valores de curva normal
+  bins.forEach(bin => {
+    const normalPoint = normalCurvePoints.find(p => Math.abs(p.x - bin.midPoint) < curveStep * 2);
     
-    return {
+    chartData.push({
       ...bin,
       normalValue: normalPoint?.normalValue || 0
-    };
+    });
   });
+  
+  // Agregar puntos de la curva después del último bin
+  normalCurvePoints
+    .filter(p => p.x > bins[bins.length - 1].rangeEnd)
+    .forEach(point => {
+      chartData.push({
+        range: `${point.x}`,
+        frequency: 0,
+        rangeStart: point.x,
+        rangeEnd: point.x,
+        midPoint: point.x,
+        withinSpec: 0,
+        outOfSpec: 0,
+        normalValue: point.normalValue,
+        isExtended: true // Marcador para saber que es parte de la extensión
+      });
+    });
 
   const withinSpecPercentage = ((stats.withinSpecCount / stats.sampleCount) * 100).toFixed(1);
   const outOfSpecPercentage = ((stats.outOfSpecCount / stats.sampleCount) * 100).toFixed(1);
 
   // Calcular el dominio del eje X para asegurar que TODOS los límites sean visibles
+  // Incluir el rango extendido de la curva normal
   const allLimits = [
     stats.lowerSpecLimit,
     stats.upperSpecLimit,
@@ -242,12 +288,14 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
     stats.ucl,
     stats.avg,
     minValue,
-    maxValue
+    maxValue,
+    curveMin,
+    curveMax
   ];
   const absoluteMin = Math.min(...allLimits);
   const absoluteMax = Math.max(...allLimits);
   const domainRange = absoluteMax - absoluteMin;
-  const domainPadding = domainRange * 0.1; // 10% de padding en cada lado
+  const domainPadding = domainRange * 0.05; // 5% de padding en cada lado
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -334,7 +382,11 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 fill="#22c55e"
                 opacity={0.7}
                 maxBarSize={60}
-              />
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#22c55e'} />
+                ))}
+              </Bar>
               
               {/* Histogram bars - Fuera de especificación */}
               <Bar 
@@ -344,7 +396,11 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 fill="#ef4444"
                 opacity={0.7}
                 maxBarSize={60}
-              />
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#ef4444'} />
+                ))}
+              </Bar>
               
               {/* Normal distribution curve */}
               <Line 
