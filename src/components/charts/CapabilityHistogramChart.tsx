@@ -309,27 +309,28 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
             </span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart data={bins} margin={{ top: 30, right: 30, left: 30, bottom: 80 }} barCategoryGap="0%" barGap={0}>
+        <CardContent className="p-2 md:p-4">
+          <ResponsiveContainer width="100%" height={400}>
+            <ComposedChart data={bins} margin={{ top: 20, right: 10, left: 0, bottom: 60 }} barCategoryGap="5%" barGap={0}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               <XAxis 
                 dataKey="midPoint" 
                 type="number"
                 domain={[absoluteMin - domainPadding, absoluteMax + domainPadding]}
                 stroke="hsl(var(--foreground))"
-                fontSize={10}
-                tickFormatter={(value) => value}
+                fontSize={9}
+                tickFormatter={(value) => value.toFixed(2)}
                 ticks={bins.map(d => d.midPoint)}
                 angle={-45}
                 textAnchor="end"
-                height={80}
-                label={{ value: 'Valor', position: 'insideBottom', offset: -10 }}
+                height={60}
+                label={{ value: 'Valor', position: 'insideBottom', offset: -5, fontSize: 11 }}
               />
               <YAxis 
                 stroke="hsl(var(--foreground))"
-                fontSize={12}
-                label={{ value: 'Frecuencia', angle: -90, position: 'insideLeft' }}
+                fontSize={10}
+                width={40}
+                label={{ value: 'Frecuencia', angle: -90, position: 'insideLeft', fontSize: 11 }}
               />
               
               {/* Custom Tooltip */}
@@ -381,7 +382,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Dentro de Spec"
                 fill="#22c55e"
                 opacity={0.8}
-                barSize={80}
+                maxBarSize={50}
               />
               
               {/* Histogram bars - Fuera de especificación */}
@@ -391,7 +392,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Fuera de Spec"
                 fill="#ef4444"
                 opacity={0.8}
-                barSize={80}
+                maxBarSize={50}
               />
               
               {/* Normal distribution curve */}
@@ -409,8 +410,8 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         </CardContent>
         
         {/* Legend */}
-        <div className="px-4 pb-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+        <div className="px-2 pb-2 md:px-4 md:pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 text-xs md:text-sm">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-green-500 opacity-70 rounded"></div>
               <span>Dentro de Especificación</span>
