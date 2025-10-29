@@ -311,7 +311,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         </CardHeader>
         <CardContent className="p-0">
           <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart data={chartData} margin={{ top: 30, right: 30, left: 30, bottom: 80 }} barCategoryGap={1}>
+            <ComposedChart data={bins} margin={{ top: 30, right: 30, left: 30, bottom: 80 }} barCategoryGap="0%" barGap={0}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               <XAxis 
                 dataKey="midPoint" 
@@ -380,13 +380,9 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 stackId="spec"
                 name="Dentro de Spec"
                 fill="#22c55e"
-                opacity={0.7}
-                barSize={60}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#22c55e'} />
-                ))}
-              </Bar>
+                opacity={0.8}
+                barSize={80}
+              />
               
               {/* Histogram bars - Fuera de especificación */}
               <Bar 
@@ -394,16 +390,13 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 stackId="spec"
                 name="Fuera de Spec"
                 fill="#ef4444"
-                opacity={0.7}
-                barSize={60}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.isExtended ? 'transparent' : '#ef4444'} />
-                ))}
-              </Bar>
+                opacity={0.8}
+                barSize={80}
+              />
               
               {/* Normal distribution curve */}
               <Line 
+                data={chartData}
                 type="monotone" 
                 dataKey="normalValue" 
                 stroke="#8b5cf6" 
