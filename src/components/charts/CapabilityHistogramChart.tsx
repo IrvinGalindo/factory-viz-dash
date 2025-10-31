@@ -295,12 +295,12 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const absoluteMin = Math.min(...allLimits);
   const absoluteMax = Math.max(...allLimits);
   const domainRange = absoluteMax - absoluteMin;
-  const domainPadding = domainRange * 0.05; // 5% de padding en cada lado
+  const domainPadding = domainRange * 0.1; // 10% de padding en cada lado para mejor visualización
 
   // Ajustar dominio del eje Y para incluir tanto la curva normal como las barras
   const stackedMax = Math.max(...bins.map(b => b.frequency));
   const lineMaxY = Math.max(...normalCurvePoints.map(p => p.normalValue));
-  const yMax = Math.max(stackedMax, lineMaxY) * 1.1;
+  const yMax = Math.max(stackedMax, lineMaxY) * 1.15; // 15% de espacio superior
 
   return (
     <div className="grid grid-cols-1 gap-6">
