@@ -219,8 +219,8 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   for (let i = 0; i <= curveSteps; i++) {
     const x = curveMin + (i * curveStep);
     const normalValue = calculateNormalDistribution(x, stats.avg, std);
-    // Escalar la curva normal para que se ajuste al histograma
-    const scaledValue = (normalValue * maxFrequency * binWidth * rawValues.length);
+    // Escalar la curva normal para que se ajuste al histograma (N * binWidth)
+    const scaledValue = normalValue * rawValues.length * binWidth;
     
     normalCurvePoints.push({
       x: x,
@@ -297,6 +297,11 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const domainRange = absoluteMax - absoluteMin;
   const domainPadding = domainRange * 0.05; // 5% de padding en cada lado
 
+  // Ajustar dominio del eje Y para incluir tanto la curva normal como las barras
+  const stackedMax = Math.max(...bins.map(b => b.frequency));
+  const lineMaxY = Math.max(...normalCurvePoints.map(p => p.normalValue));
+  const yMax = Math.max(stackedMax, lineMaxY) * 1.1;
+
   return (
     <div className="grid grid-cols-1 gap-6">
       {/* Histogram Chart */}
@@ -330,6 +335,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 stroke="hsl(var(--foreground))"
                 fontSize={10}
                 width={40}
+                domain={[0, yMax]}
                 label={{ value: 'Frecuencia', angle: -90, position: 'insideLeft', fontSize: 11 }}
               />
               
