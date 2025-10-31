@@ -407,9 +407,10 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 type="monotone" 
                 dataKey="normalValue" 
                 stroke="#8b5cf6" 
-                strokeWidth={3}
+                strokeWidth={2.5}
                 dot={false}
                 name="Distribución Normal"
+                opacity={0.9}
               />
             </ComposedChart>
           </ResponsiveContainer>
