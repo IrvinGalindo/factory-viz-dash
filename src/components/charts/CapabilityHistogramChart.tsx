@@ -316,7 +316,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         </CardHeader>
         <CardContent className="p-2 md:p-4">
           <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={bins} margin={{ top: 20, right: 10, left: 0, bottom: 60 }} barCategoryGap="5%" barGap={0}>
+            <ComposedChart data={bins} margin={{ top: 20, right: 10, left: 0, bottom: 60 }} barCategoryGap="1%" barGap={0}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               <XAxis 
                 dataKey="midPoint" 
@@ -388,7 +388,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Dentro de Spec"
                 fill="#22c55e"
                 opacity={0.8}
-                maxBarSize={50}
+                maxBarSize={80}
               />
               
               {/* Histogram bars - Fuera de especificación */}
@@ -398,7 +398,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 name="Fuera de Spec"
                 fill="#ef4444"
                 opacity={0.8}
-                maxBarSize={50}
+                maxBarSize={80}
               />
               
               {/* Normal distribution curve */}
