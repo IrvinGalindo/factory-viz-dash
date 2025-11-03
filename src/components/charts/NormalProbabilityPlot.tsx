@@ -297,8 +297,8 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             {/* Límite de confianza superior - Margen de error superior */}
             <Line
               data={upperLine}
-               type="linear"
-              dataKey="theoretical"
+              type="linear"
+              dataKey="observed"
               stroke="hsl(var(--destructive))"
               strokeWidth={2}
               strokeDasharray="5 5"
@@ -310,8 +310,8 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             {/* Límite de confianza inferior - Margen de error inferior */}
             <Line
               data={lowerLine}
-               type="linear"
-              dataKey="theoretical"
+              type="linear"
+              dataKey="observed"
               stroke="hsl(var(--destructive))"
               strokeWidth={2}
               strokeDasharray="5 5"
@@ -324,7 +324,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             <Line
               data={expectedLine}
               type="linear"
-              dataKey="theoretical"
+              dataKey="observed"
               stroke="hsl(var(--primary))"
               strokeWidth={2.5}
               dot={false}
