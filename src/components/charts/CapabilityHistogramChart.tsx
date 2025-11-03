@@ -165,9 +165,24 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const maxValue = Math.max(...rawValues);
   const range = maxValue - minValue;
   
-  // Número de bins usando la regla de Sturges
-  const numBins = Math.ceil(Math.log2(rawValues.length) + 1);
-  const binWidth = range / numBins;
+  // Priorizar rangos de 0.5
+  const preferredBinWidth = 0.5;
+  const potentialBins = Math.ceil(range / preferredBinWidth);
+  
+  // Si el número de bins con 0.5 es razonable (entre 5 y 30), usar 0.5
+  // Si no, calcular usando la regla de Sturges
+  let numBins: number;
+  let binWidth: number;
+  
+  if (potentialBins >= 5 && potentialBins <= 30) {
+    binWidth = preferredBinWidth;
+    numBins = potentialBins;
+    console.log("📊 Histograma - Usando rangos de 0.5");
+  } else {
+    numBins = Math.ceil(Math.log2(rawValues.length) + 1);
+    binWidth = range / numBins;
+    console.log("📊 Histograma - Usando rangos custom (Sturges)");
+  }
   
   console.log("📊 Histograma - Número de bins calculados:", numBins);
 
