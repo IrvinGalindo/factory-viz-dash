@@ -284,14 +284,36 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             />
             
             <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--popover))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px',
-                color: 'hsl(var(--popover-foreground))',
+              content={({ active, payload }) => {
+                if (!active || !payload || payload.length === 0) return null;
+                return (
+                  <div
+                    style={{
+                      background: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 6,
+                      color: 'hsl(var(--popover-foreground))',
+                      padding: 8,
+                    }}
+                  >
+                    {payload.map((item: any, idx: number) => {
+                      const name = item.name as string;
+                      const color = item.color || item.stroke || item.fill;
+                      const observed = item?.payload?.observed as number | undefined;
+                      return (
+                        <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ width: 10, height: 10, background: color, borderRadius: 9999 }} />
+                          <span>{name}</span>
+                          <span>: {typeof observed === 'number' ? observed.toFixed(4) : '-'}</span>
+                        </div>
+                      );
+                    })}
+                    <div style={{ fontSize: 12, opacity: 0.7 }}>
+                      Percentil teórico: {typeof payload[0]?.payload?.theoretical === 'number' ? payload[0].payload.theoretical.toFixed(4) : '-'}
+                    </div>
+                  </div>
+                );
               }}
-              formatter={(value: number) => value.toFixed(4)}
-              labelFormatter={() => ''}
             />
 
             {/* Límite de confianza superior - Margen de error superior */}
