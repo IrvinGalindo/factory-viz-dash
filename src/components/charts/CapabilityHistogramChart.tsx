@@ -45,7 +45,7 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
     return (
       <div className="bg-background border border-border rounded-lg shadow-lg p-4 text-sm">
         <div className="font-semibold mb-2 text-foreground border-b pb-2">
-          Rango: {data.rangeStart} - {data.rangeEnd}
+          Rango: {data.rangeStart.toFixed(4)} - {data.rangeEnd.toFixed(4)}
         </div>
         
         <div className="space-y-1.5">
@@ -324,7 +324,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 domain={[absoluteMin - domainPadding, absoluteMax + domainPadding]}
                 stroke="hsl(var(--foreground))"
                 fontSize={9}
-                tickFormatter={(value) => value.toFixed(2)}
+                tickFormatter={(value) => value.toFixed(4)}
                 ticks={bins.map(d => d.midPoint)}
                 angle={-45}
                 textAnchor="end"
