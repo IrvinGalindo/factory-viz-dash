@@ -186,6 +186,14 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
     theoretical: th,
   }));
 
+  // Calcular dominios con padding para evitar recortes
+  const xMin = sortedValues[0];
+  const xMax = sortedValues[n - 1];
+  const xPad = (xMax - xMin) * 0.05 || 1e-6;
+  const yMin = theoreticalQuantiles[0];
+  const yMax = theoreticalQuantiles[n - 1];
+  const yPad = (yMax - yMin) * 0.05 || 1e-6;
+
   // Calcular estadístico Anderson-Darling
   const { ad, pValue } = calculateAndersonDarling(values);
 
@@ -240,7 +248,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             <XAxis
               dataKey="observed"
               type="number"
-              domain={['dataMin - 0.01', 'dataMax + 0.01']}
+              domain={[xMin - xPad, xMax + xPad]}
               label={{ 
                 value: 'Valor Observado', 
                 position: 'insideBottom', 
@@ -254,6 +262,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             <YAxis
               dataKey="theoretical"
               type="number"
+              domain={[yMin - yPad, yMax + yPad]}
               label={{ 
                 value: 'Percentil Normal Teórico', 
                 angle: -90, 
@@ -278,7 +287,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             {/* Límite de confianza superior - Margen de error superior */}
             <Line
               data={upperLine}
-              type="monotone"
+               type="linear"
               dataKey="theoretical"
               stroke="hsl(var(--destructive))"
               strokeWidth={2}
@@ -291,7 +300,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             {/* Límite de confianza inferior - Margen de error inferior */}
             <Line
               data={lowerLine}
-              type="monotone"
+               type="linear"
               dataKey="theoretical"
               stroke="hsl(var(--destructive))"
               strokeWidth={2}
@@ -304,7 +313,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             {/* Línea de valor esperado (normalidad perfecta) */}
             <Line
               data={expectedLine}
-              type="monotone"
+              type="linear"
               dataKey="theoretical"
               stroke="hsl(var(--primary))"
               strokeWidth={2.5}
@@ -315,7 +324,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
 
             {/* Puntos de datos observados */}
             <Scatter
-              dataKey="observed"
+               dataKey="theoretical"
               fill={isNormal ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"}
               name="Datos observados"
             />
