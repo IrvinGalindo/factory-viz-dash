@@ -170,6 +170,22 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
     lowerConfidence: intercept + slope * th - 1.96 * stdResidual,
   }));
 
+  // Series para líneas (x = esperado, y = teórico)
+  const expectedLine = theoreticalQuantiles.map((th) => ({
+    observed: intercept + slope * th,
+    theoretical: th,
+  }));
+
+  const upperLine = theoreticalQuantiles.map((th) => ({
+    observed: intercept + slope * th + 1.96 * stdResidual,
+    theoretical: th,
+  }));
+
+  const lowerLine = theoreticalQuantiles.map((th) => ({
+    observed: intercept + slope * th - 1.96 * stdResidual,
+    theoretical: th,
+  }));
+
   // Calcular estadístico Anderson-Darling
   const { ad, pValue } = calculateAndersonDarling(values);
 
@@ -261,9 +277,10 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
 
             {/* Límite de confianza superior - Margen de error superior */}
             <Line
+              data={upperLine}
               type="monotone"
-              dataKey="upperConfidence"
-              stroke="#ef4444"
+              dataKey="theoretical"
+              stroke="hsl(var(--destructive))"
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={false}
@@ -273,9 +290,10 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             
             {/* Límite de confianza inferior - Margen de error inferior */}
             <Line
+              data={lowerLine}
               type="monotone"
-              dataKey="lowerConfidence"
-              stroke="#ef4444"
+              dataKey="theoretical"
+              stroke="hsl(var(--destructive))"
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={false}
@@ -285,8 +303,9 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
 
             {/* Línea de valor esperado (normalidad perfecta) */}
             <Line
+              data={expectedLine}
               type="monotone"
-              dataKey="expected"
+              dataKey="theoretical"
               stroke="hsl(var(--primary))"
               strokeWidth={2.5}
               dot={false}
