@@ -212,14 +212,14 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   
   // Calcular valores de la curva normal con rango extendido
   const normalCurvePoints: any[] = [];
-  const curveSteps = 150; // Más puntos para una curva más suave
+  const curveSteps = 200; // Más puntos para una curva más suave
   const curveStep = curveRange / curveSteps;
   const maxFrequency = Math.max(...bins.map(b => b.frequency));
   
   for (let i = 0; i <= curveSteps; i++) {
     const x = curveMin + (i * curveStep);
     const normalValue = calculateNormalDistribution(x, stats.avg, std);
-    // Escalar la curva normal para que se ajuste al histograma (N * binWidth)
+    // Escalar la curva normal para que coincida con la altura del histograma
     const scaledValue = normalValue * rawValues.length * binWidth;
     
     normalCurvePoints.push({
@@ -404,13 +404,14 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               {/* Normal distribution curve */}
               <Line 
                 data={chartData}
-                type="monotone" 
+                type="basis" 
                 dataKey="normalValue" 
                 stroke="#8b5cf6" 
-                strokeWidth={2.5}
+                strokeWidth={3}
                 dot={false}
                 name="Distribución Normal"
-                opacity={0.9}
+                opacity={0.95}
+                isAnimationActive={false}
               />
             </ComposedChart>
           </ResponsiveContainer>
