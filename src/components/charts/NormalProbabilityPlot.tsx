@@ -140,12 +140,6 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
     return inverseNormalCDF(p);
   });
 
-  // Preparar datos para la gráfica
-  const plotData = sortedValues.map((value, i) => ({
-    observed: value,
-    theoretical: theoreticalQuantiles[i],
-  }));
-
   // Calcular línea de referencia (regresión lineal)
   const meanObserved = sortedValues.reduce((sum, x) => sum + x, 0) / n;
   const meanTheoretical = theoreticalQuantiles.reduce((sum, x) => sum + x, 0) / n;
@@ -159,15 +153,6 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
   const slope = numerator / denominator;
   const intercept = meanObserved - slope * meanTheoretical;
 
-  // Puntos para la línea de referencia (valor esperado)
-  const minTheoretical = Math.min(...theoreticalQuantiles);
-  const maxTheoretical = Math.max(...theoreticalQuantiles);
-  
-  const referenceLine = [
-    { observed: intercept + slope * minTheoretical, theoretical: minTheoretical },
-    { observed: intercept + slope * maxTheoretical, theoretical: maxTheoretical },
-  ];
-
   // Calcular límites de confianza del 95% (márgenes de error)
   const stdResidual = Math.sqrt(
     sortedValues.reduce((sum, val, i) => {
@@ -176,28 +161,14 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
     }, 0) / Math.max(n - 2, 1)
   );
 
-  // Líneas de confianza superiores e inferiores
-  const confidenceUpper = [
-    { 
-      observed: intercept + slope * minTheoretical + 1.96 * stdResidual, 
-      theoretical: minTheoretical 
-    },
-    { 
-      observed: intercept + slope * maxTheoretical + 1.96 * stdResidual, 
-      theoretical: maxTheoretical 
-    },
-  ];
-
-  const confidenceLower = [
-    { 
-      observed: intercept + slope * minTheoretical - 1.96 * stdResidual, 
-      theoretical: minTheoretical 
-    },
-    { 
-      observed: intercept + slope * maxTheoretical - 1.96 * stdResidual, 
-      theoretical: maxTheoretical 
-    },
-  ];
+  // Preparar datos para la gráfica incluyendo límites de confianza
+  const plotData = theoreticalQuantiles.map((th, i) => ({
+    theoretical: th,
+    observed: sortedValues[i],
+    expected: intercept + slope * th,
+    upperConfidence: intercept + slope * th + 1.96 * stdResidual,
+    lowerConfidence: intercept + slope * th - 1.96 * stdResidual,
+  }));
 
   // Calcular estadístico Anderson-Darling
   const { ad, pValue } = calculateAndersonDarling(values);
@@ -247,7 +218,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
       </CardHeader>
       <CardContent className="p-2 md:p-4">
         <ResponsiveContainer width="100%" height={400}>
-          <ComposedChart margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+          <ComposedChart data={plotData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
             
             <XAxis
@@ -288,11 +259,10 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
               labelFormatter={() => ''}
             />
 
-            {/* Límites de confianza del 95% - Márgenes de error superiores */}
+            {/* Límite de confianza superior - Margen de error superior */}
             <Line
-              data={confidenceUpper}
-              type="linear"
-              dataKey="observed"
+              type="monotone"
+              dataKey="upperConfidence"
               stroke="#ef4444"
               strokeWidth={2}
               strokeDasharray="5 5"
@@ -301,11 +271,10 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
               name="Límite superior 95%"
             />
             
-            {/* Límites de confianza del 95% - Márgenes de error inferiores */}
+            {/* Límite de confianza inferior - Margen de error inferior */}
             <Line
-              data={confidenceLower}
-              type="linear"
-              dataKey="observed"
+              type="monotone"
+              dataKey="lowerConfidence"
               stroke="#ef4444"
               strokeWidth={2}
               strokeDasharray="5 5"
@@ -314,11 +283,10 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
               name="Límite inferior 95%"
             />
 
-            {/* Línea de referencia (valor esperado - normalidad perfecta) */}
+            {/* Línea de valor esperado (normalidad perfecta) */}
             <Line
-              data={referenceLine}
-              type="linear"
-              dataKey="observed"
+              type="monotone"
+              dataKey="expected"
               stroke="hsl(var(--primary))"
               strokeWidth={2.5}
               dot={false}
@@ -328,7 +296,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
 
             {/* Puntos de datos observados */}
             <Scatter
-              data={plotData}
+              dataKey="observed"
               fill={isNormal ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"}
               name="Datos observados"
             />
