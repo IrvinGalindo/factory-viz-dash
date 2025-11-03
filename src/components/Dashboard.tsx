@@ -35,6 +35,7 @@ import { StatusChart } from "@/components/charts/StatusChart";
 import { TemperatureChart } from "@/components/charts/TemperatureChart";
 import { SPCChart } from "@/components/charts/SPCChart";
 import { SChart } from "@/components/charts/SChart";
+import { NormalProbabilityPlot } from "@/components/charts/NormalProbabilityPlot";
 import {
   AlertCircle,
   CheckCircle,
@@ -1022,6 +1023,16 @@ const Dashboard = () => {
                       </div>
                     </CardContent>
                   </Card>
+                </div>
+              ) : null}
+
+              {/* Normal Probability Plot */}
+              {spcData && selectedProcess && spcData.rawValues && spcData.rawValues.length > 0 ? (
+                <div className="md:col-span-2">
+                  <NormalProbabilityPlot 
+                    values={spcData.rawValues}
+                    measurementName={`Proceso ${selectedProcess}`}
+                  />
                 </div>
               ) : null}
 
