@@ -351,7 +351,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         </CardHeader>
         <CardContent className="p-2 md:p-4">
           <ResponsiveContainer width="100%" height={400}>
-            <ComposedChart data={bins} margin={{ top: 20, right: 10, left: 0, bottom: 60 }} barCategoryGap="1%" barGap={0}>
+            <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }} barCategoryGap="1%" barGap={0}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
               
               {/* Definir gradientes para las áreas de desviación */}
@@ -381,6 +381,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 angle={-45}
                 textAnchor="end"
                 height={60}
+                interval="preserveStartEnd"
                 label={{ value: 'Valor', position: 'insideBottom', offset: -5, fontSize: 11 }}
               />
               <YAxis 
@@ -505,7 +506,6 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               
               {/* Normal distribution curves */}
               <Line 
-                data={chartData}
                 type="basis" 
                 dataKey="normalValueOverall" 
                 stroke="#f59e0b" 
@@ -516,7 +516,6 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 isAnimationActive={false}
               />
               <Line 
-                data={chartData}
                 type="basis" 
                 dataKey="normalValueWithin" 
                 stroke="#10b981" 
