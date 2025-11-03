@@ -194,6 +194,14 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
   const yMax = theoreticalQuantiles[n - 1];
   const yPad = (yMax - yMin) * 0.05 || 1e-6;
 
+  // Generar ticks del eje X con intervalos de 0.1
+  const xTickMin = Math.floor(xMin * 10) / 10;
+  const xTickMax = Math.ceil(xMax * 10) / 10;
+  const xTicks = [];
+  for (let i = xTickMin; i <= xTickMax; i += 0.1) {
+    xTicks.push(Math.round(i * 10) / 10);
+  }
+
   // Calcular estadístico Anderson-Darling
   const { ad, pValue } = calculateAndersonDarling(values);
 
@@ -249,6 +257,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
               dataKey="observed"
               type="number"
               domain={[xMin - xPad, xMax + xPad]}
+              ticks={xTicks}
               label={{ 
                 value: 'Valor Observado', 
                 position: 'insideBottom', 
@@ -256,6 +265,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
                 style: { fontSize: 12, fill: 'hsl(var(--foreground))' }
               }}
               tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
+              tickFormatter={(value) => value.toFixed(1)}
               stroke="hsl(var(--muted-foreground))"
             />
             
