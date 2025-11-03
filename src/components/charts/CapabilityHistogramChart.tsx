@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Cell, Line, LineChart, ComposedChart, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Cell, Line, LineChart, ComposedChart, Tooltip, Area } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface CapabilityData {
@@ -283,6 +283,12 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         withinSpec: 0,
         outOfSpec: 0,
         normalValue: point.normalValue,
+        sigma1Upper: point.sigma1Upper,
+        sigma1Lower: point.sigma1Lower,
+        sigma2Upper: point.sigma2Upper,
+        sigma2Lower: point.sigma2Lower,
+        sigma3Upper: point.sigma3Upper,
+        sigma3Lower: point.sigma3Lower,
         isExtended: true // Marcador para saber que es parte de la extensión
       });
     });
@@ -293,7 +299,13 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
     
     chartData.push({
       ...bin,
-      normalValue: normalPoint?.normalValue || 0
+      normalValue: normalPoint?.normalValue || 0,
+      sigma1Upper: normalPoint?.sigma1Upper || 0,
+      sigma1Lower: normalPoint?.sigma1Lower || 0,
+      sigma2Upper: normalPoint?.sigma2Upper || 0,
+      sigma2Lower: normalPoint?.sigma2Lower || 0,
+      sigma3Upper: normalPoint?.sigma3Upper || 0,
+      sigma3Lower: normalPoint?.sigma3Lower || 0
     });
   });
   
@@ -310,6 +322,12 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         withinSpec: 0,
         outOfSpec: 0,
         normalValue: point.normalValue,
+        sigma1Upper: point.sigma1Upper,
+        sigma1Lower: point.sigma1Lower,
+        sigma2Upper: point.sigma2Upper,
+        sigma2Lower: point.sigma2Lower,
+        sigma3Upper: point.sigma3Upper,
+        sigma3Lower: point.sigma3Lower,
         isExtended: true // Marcador para saber que es parte de la extensión
       });
     });
@@ -484,6 +502,61 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 strokeDasharray="3 3"
                 opacity={0.3}
                 label={{ value: '-3σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
+              />
+              
+              {/* Áreas sombreadas para desviaciones estándar - deben ir antes de las barras */}
+              {/* Área ±3σ */}
+              <Area
+                data={chartData}
+                type="basis"
+                dataKey="sigma3Upper"
+                stroke="none"
+                fill="url(#sigma3Area)"
+                isAnimationActive={false}
+              />
+              <Area
+                data={chartData}
+                type="basis"
+                dataKey="sigma3Lower"
+                stroke="none"
+                fill="url(#sigma3Area)"
+                isAnimationActive={false}
+              />
+              
+              {/* Área ±2σ */}
+              <Area
+                data={chartData}
+                type="basis"
+                dataKey="sigma2Upper"
+                stroke="none"
+                fill="url(#sigma2Area)"
+                isAnimationActive={false}
+              />
+              <Area
+                data={chartData}
+                type="basis"
+                dataKey="sigma2Lower"
+                stroke="none"
+                fill="url(#sigma2Area)"
+                isAnimationActive={false}
+              />
+              
+              {/* Área ±1σ */}
+              <Area
+                data={chartData}
+                type="basis"
+                dataKey="sigma1Upper"
+                stroke="none"
+                fill="url(#sigma1Area)"
+                isAnimationActive={false}
+              />
+              <Area
+                data={chartData}
+                type="basis"
+                dataKey="sigma1Lower"
+                stroke="none"
+                fill="url(#sigma1Area)"
+                isAnimationActive={false}
               />
               
               {/* Histogram bars - Dentro de especificación */}
