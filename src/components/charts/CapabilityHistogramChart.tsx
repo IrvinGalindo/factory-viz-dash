@@ -229,9 +229,10 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   console.log("📊 Histograma - Bins creados:", bins);
 
   // Calcular el rango extendido para la curva normal (4 desviaciones estándar en cada lado)
-  const std = stats.stdOverall || stats.std;
-  const curveMin = stats.avg - (4 * std);
-  const curveMax = stats.avg + (4 * std);
+  const stdOverall = stats.stdOverall || stats.std;
+  const stdWithin = stats.stdWithin || stats.std;
+  const curveMin = stats.avg - (4 * stdOverall);
+  const curveMax = stats.avg + (4 * stdOverall);
   const curveRange = curveMax - curveMin;
   
   // Calcular valores de la curva normal con rango extendido
@@ -242,27 +243,19 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   
   for (let i = 0; i <= curveSteps; i++) {
     const x = curveMin + (i * curveStep);
-    const normalValue = calculateNormalDistribution(x, stats.avg, std);
-    // Escalar la curva normal para que coincida con la altura del histograma
-    const scaledValue = normalValue * rawValues.length * binWidth;
     
-    // Calcular las bandas de desviación estándar (±1σ, ±2σ, ±3σ)
-    const sigma1Upper = calculateNormalDistribution(x, stats.avg + std, std) * rawValues.length * binWidth;
-    const sigma1Lower = calculateNormalDistribution(x, stats.avg - std, std) * rawValues.length * binWidth;
-    const sigma2Upper = calculateNormalDistribution(x, stats.avg + 2*std, std) * rawValues.length * binWidth;
-    const sigma2Lower = calculateNormalDistribution(x, stats.avg - 2*std, std) * rawValues.length * binWidth;
-    const sigma3Upper = calculateNormalDistribution(x, stats.avg + 3*std, std) * rawValues.length * binWidth;
-    const sigma3Lower = calculateNormalDistribution(x, stats.avg - 3*std, std) * rawValues.length * binWidth;
+    // Curva Normal Overall
+    const normalValueOverall = calculateNormalDistribution(x, stats.avg, stdOverall);
+    const scaledValueOverall = normalValueOverall * rawValues.length * binWidth;
+    
+    // Curva Normal Within
+    const normalValueWithin = calculateNormalDistribution(x, stats.avg, stdWithin);
+    const scaledValueWithin = normalValueWithin * rawValues.length * binWidth;
     
     normalCurvePoints.push({
       x: x,
-      normalValue: scaledValue,
-      sigma1Upper,
-      sigma1Lower,
-      sigma2Upper,
-      sigma2Lower,
-      sigma3Upper,
-      sigma3Lower
+      normalValueOverall: scaledValueOverall,
+      normalValueWithin: scaledValueWithin
     });
   }
 
@@ -282,7 +275,8 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         midPoint: point.x,
         withinSpec: 0,
         outOfSpec: 0,
-        normalValue: point.normalValue,
+        normalValueOverall: point.normalValueOverall,
+        normalValueWithin: point.normalValueWithin,
         isExtended: true // Marcador para saber que es parte de la extensión
       });
     });
@@ -293,7 +287,8 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
     
     chartData.push({
       ...bin,
-      normalValue: normalPoint?.normalValue || 0
+      normalValueOverall: normalPoint?.normalValueOverall || 0,
+      normalValueWithin: normalPoint?.normalValueWithin || 0
     });
   });
   
@@ -309,7 +304,8 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         midPoint: point.x,
         withinSpec: 0,
         outOfSpec: 0,
-        normalValue: point.normalValue,
+        normalValueOverall: point.normalValueOverall,
+        normalValueWithin: point.normalValueWithin,
         isExtended: true // Marcador para saber que es parte de la extensión
       });
     });
@@ -337,8 +333,9 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
 
   // Ajustar dominio del eje Y para incluir tanto la curva normal como las barras
   const stackedMax = Math.max(...bins.map(b => b.frequency));
-  const lineMaxY = Math.max(...normalCurvePoints.map(p => p.normalValue));
-  const yMax = Math.max(stackedMax, lineMaxY) * 1.15; // 15% de espacio superior
+  const lineMaxYOverall = Math.max(...normalCurvePoints.map(p => p.normalValueOverall));
+  const lineMaxYWithin = Math.max(...normalCurvePoints.map(p => p.normalValueWithin));
+  const yMax = Math.max(stackedMax, lineMaxYOverall, lineMaxYWithin) * 1.15; // 15% de espacio superior
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -438,7 +435,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               
               {/* Reference lines for standard deviations */}
               <ReferenceLine 
-                x={stats.avg + std} 
+                x={stats.avg + stdOverall} 
                 stroke="#8b5cf6" 
                 strokeWidth={1}
                 strokeDasharray="3 3"
@@ -446,7 +443,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 label={{ value: '+1σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
               <ReferenceLine 
-                x={stats.avg - std} 
+                x={stats.avg - stdOverall} 
                 stroke="#8b5cf6" 
                 strokeWidth={1}
                 strokeDasharray="3 3"
@@ -454,7 +451,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 label={{ value: '-1σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
               <ReferenceLine 
-                x={stats.avg + 2*std} 
+                x={stats.avg + 2*stdOverall} 
                 stroke="#8b5cf6" 
                 strokeWidth={1}
                 strokeDasharray="3 3"
@@ -462,7 +459,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 label={{ value: '+2σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
               <ReferenceLine 
-                x={stats.avg - 2*std} 
+                x={stats.avg - 2*stdOverall} 
                 stroke="#8b5cf6" 
                 strokeWidth={1}
                 strokeDasharray="3 3"
@@ -470,7 +467,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 label={{ value: '-2σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
               <ReferenceLine 
-                x={stats.avg + 3*std} 
+                x={stats.avg + 3*stdOverall} 
                 stroke="#8b5cf6" 
                 strokeWidth={1}
                 strokeDasharray="3 3"
@@ -478,7 +475,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 label={{ value: '+3σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
               <ReferenceLine 
-                x={stats.avg - 3*std} 
+                x={stats.avg - 3*stdOverall} 
                 stroke="#8b5cf6" 
                 strokeWidth={1}
                 strokeDasharray="3 3"
@@ -506,16 +503,27 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 maxBarSize={80}
               />
               
-              {/* Normal distribution curve */}
+              {/* Normal distribution curves */}
               <Line 
                 data={chartData}
                 type="basis" 
-                dataKey="normalValue" 
-                stroke="#8b5cf6" 
-                strokeWidth={3}
+                dataKey="normalValueOverall" 
+                stroke="#f59e0b" 
+                strokeWidth={2.5}
                 dot={false}
-                name="Distribución Normal"
-                opacity={0.95}
+                name="Curva Overall"
+                opacity={0.9}
+                isAnimationActive={false}
+              />
+              <Line 
+                data={chartData}
+                type="basis" 
+                dataKey="normalValueWithin" 
+                stroke="#10b981" 
+                strokeWidth={2.5}
+                dot={false}
+                name="Curva Within"
+                opacity={0.9}
                 isAnimationActive={false}
               />
             </ComposedChart>
@@ -534,8 +542,12 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               <span>Fuera de Especificación</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-purple-500"></div>
-              <span>Curva Normal</span>
+              <div className="w-4 h-0.5 bg-amber-500"></div>
+              <span>Curva Overall</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-emerald-500"></div>
+              <span>Curva Within</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-red-600"></div>
@@ -641,7 +653,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                       {(stats.stdWithin ? (normalCDF((stats.lowerSpecLimit - stats.avg) / stats.stdWithin) * 1000000).toFixed(2) : 'N/A')}
                     </td>
                     <td className="text-right py-2 px-2 font-mono">
-                      {(normalCDF((stats.lowerSpecLimit - stats.avg) / std) * 1000000).toFixed(2)}
+                      {(normalCDF((stats.lowerSpecLimit - stats.avg) / stdOverall) * 1000000).toFixed(2)}
                     </td>
                   </tr>
                   <tr className="border-b">
@@ -653,7 +665,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                       {(stats.stdWithin ? ((1 - normalCDF((stats.upperSpecLimit - stats.avg) / stats.stdWithin)) * 1000000).toFixed(2) : 'N/A')}
                     </td>
                     <td className="text-right py-2 px-2 font-mono">
-                      {((1 - normalCDF((stats.upperSpecLimit - stats.avg) / std)) * 1000000).toFixed(2)}
+                      {((1 - normalCDF((stats.upperSpecLimit - stats.avg) / stdOverall)) * 1000000).toFixed(2)}
                     </td>
                   </tr>
                   <tr>
@@ -668,8 +680,8 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                       ).toFixed(2) : 'N/A')}
                     </td>
                     <td className="text-right py-2 px-2 font-mono font-semibold">
-                      {((normalCDF((stats.lowerSpecLimit - stats.avg) / std) +
-                        (1 - normalCDF((stats.upperSpecLimit - stats.avg) / std))) * 1000000).toFixed(2)}
+                      {((normalCDF((stats.lowerSpecLimit - stats.avg) / stdOverall) +
+                        (1 - normalCDF((stats.upperSpecLimit - stats.avg) / stdOverall))) * 1000000).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
