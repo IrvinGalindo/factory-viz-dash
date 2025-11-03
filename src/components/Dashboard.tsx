@@ -1026,16 +1026,6 @@ const Dashboard = () => {
                 </div>
               ) : null}
 
-              {/* Normal Probability Plot */}
-              {spcData && selectedProcess && spcData.rawValues && spcData.rawValues.length > 0 ? (
-                <div className="md:col-span-2">
-                  <NormalProbabilityPlot 
-                    values={spcData.rawValues}
-                    measurementName={`Proceso ${selectedProcess}`}
-                  />
-                </div>
-              ) : null}
-
               {/* S Chart - Control de Variabilidad */}
               {spcData && selectedProcess && spcData.subgroups && spcData.subgroups.length > 0 ? (
                 <div className="md:col-span-2">
@@ -1043,6 +1033,16 @@ const Dashboard = () => {
                     subgroups={spcData.subgroups}
                     processName={`Proceso ${selectedProcess}`}
                     item={spcData.processInfo?.item}
+                  />
+                </div>
+              ) : null}
+
+              {/* Normal Probability Plot */}
+              {spcData && selectedProcess && spcData.rawValues && spcData.rawValues.length > 0 ? (
+                <div className="md:col-span-2">
+                  <NormalProbabilityPlot 
+                    values={spcData.rawValues}
+                    measurementName={`Proceso ${selectedProcess}`}
                   />
                 </div>
               ) : null}
