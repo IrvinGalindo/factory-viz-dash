@@ -159,7 +159,7 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
   const slope = numerator / denominator;
   const intercept = meanObserved - slope * meanTheoretical;
 
-  // Puntos para la línea de referencia
+  // Puntos para la línea de referencia (valor esperado)
   const minTheoretical = Math.min(...theoreticalQuantiles);
   const maxTheoretical = Math.max(...theoreticalQuantiles);
   
@@ -168,23 +168,36 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
     { observed: intercept + slope * maxTheoretical, theoretical: maxTheoretical },
   ];
 
-  // Calcular límites de confianza del 95%
+  // Calcular límites de confianza del 95% (márgenes de error)
   const stdResidual = Math.sqrt(
     sortedValues.reduce((sum, val, i) => {
       const expected = intercept + slope * theoreticalQuantiles[i];
       return sum + Math.pow(val - expected, 2);
-    }, 0) / (n - 2)
+    }, 0) / Math.max(n - 2, 1)
   );
 
-  const confidenceUpper = theoreticalQuantiles.map((th, i) => ({
-    observed: intercept + slope * th + 1.96 * stdResidual,
-    theoretical: th,
-  }));
+  // Líneas de confianza superiores e inferiores
+  const confidenceUpper = [
+    { 
+      observed: intercept + slope * minTheoretical + 1.96 * stdResidual, 
+      theoretical: minTheoretical 
+    },
+    { 
+      observed: intercept + slope * maxTheoretical + 1.96 * stdResidual, 
+      theoretical: maxTheoretical 
+    },
+  ];
 
-  const confidenceLower = theoreticalQuantiles.map((th, i) => ({
-    observed: intercept + slope * th - 1.96 * stdResidual,
-    theoretical: th,
-  }));
+  const confidenceLower = [
+    { 
+      observed: intercept + slope * minTheoretical - 1.96 * stdResidual, 
+      theoretical: minTheoretical 
+    },
+    { 
+      observed: intercept + slope * maxTheoretical - 1.96 * stdResidual, 
+      theoretical: maxTheoretical 
+    },
+  ];
 
   // Calcular estadístico Anderson-Darling
   const { ad, pValue } = calculateAndersonDarling(values);
@@ -275,41 +288,42 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
               labelFormatter={() => ''}
             />
 
-            {/* Límites de confianza del 95% */}
+            {/* Límites de confianza del 95% - Márgenes de error superiores */}
             <Line
               data={confidenceUpper}
-              type="monotone"
+              type="linear"
               dataKey="observed"
-              stroke="hsl(var(--muted-foreground))"
-              strokeWidth={1}
+              stroke="#ef4444"
+              strokeWidth={2}
               strokeDasharray="5 5"
               dot={false}
               isAnimationActive={false}
               name="Límite superior 95%"
             />
             
+            {/* Límites de confianza del 95% - Márgenes de error inferiores */}
             <Line
               data={confidenceLower}
-              type="monotone"
+              type="linear"
               dataKey="observed"
-              stroke="hsl(var(--muted-foreground))"
-              strokeWidth={1}
+              stroke="#ef4444"
+              strokeWidth={2}
               strokeDasharray="5 5"
               dot={false}
               isAnimationActive={false}
               name="Límite inferior 95%"
             />
 
-            {/* Línea de referencia (normalidad perfecta) */}
+            {/* Línea de referencia (valor esperado - normalidad perfecta) */}
             <Line
               data={referenceLine}
-              type="monotone"
+              type="linear"
               dataKey="observed"
               stroke="hsl(var(--primary))"
-              strokeWidth={2}
+              strokeWidth={2.5}
               dot={false}
               isAnimationActive={false}
-              name="Normalidad teórica"
+              name="Valor esperado"
             />
 
             {/* Puntos de datos observados */}
@@ -374,8 +388,8 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
             <div className="flex items-start gap-2">
               <div className="w-3 h-3 rounded-full bg-primary mt-1 flex-shrink-0" />
               <div>
-                <p className="font-medium text-foreground">Línea de referencia</p>
-                <p className="text-xs text-muted-foreground">Normalidad perfecta</p>
+                <p className="font-medium text-foreground">Valor esperado</p>
+                <p className="text-xs text-muted-foreground">Línea de normalidad teórica</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
@@ -387,10 +401,10 @@ export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }:
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-8 h-0.5 border-t-2 border-dashed border-muted-foreground mt-2 flex-shrink-0" />
+              <div className="w-8 h-0.5 border-t-2 border-dashed mt-2 flex-shrink-0" style={{ borderColor: "#ef4444" }} />
               <div>
-                <p className="font-medium text-foreground">Límites de confianza</p>
-                <p className="text-xs text-muted-foreground">Intervalo del 95%</p>
+                <p className="font-medium text-foreground">Márgenes de error</p>
+                <p className="text-xs text-muted-foreground">Límites de confianza 95%</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
