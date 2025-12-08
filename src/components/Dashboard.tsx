@@ -500,27 +500,21 @@ const Dashboard = () => {
         console.log("🎊 Final chart data:", chartData.length, "points");
         console.log("📊 Final statistics:", statisticsData);
 
-        // Extract allValues from subgroups in stats (from spc_statistics table)
-        let allValuesFromStats: number[] = [];
-        if (spcStats?.subgroups && Array.isArray(spcStats.subgroups)) {
-          spcStats.subgroups.forEach((subgroup: any) => {
-            if (subgroup.values && Array.isArray(subgroup.values)) {
-              allValuesFromStats.push(...subgroup.values.map((v: any) => Number(v)));
-            }
-          });
-        }
-        
-        // Fallback to processValues if no subgroup values available
-        const rawValuesFromDB = allValuesFromStats.length > 0 
-          ? allValuesFromStats 
+        // Get allValues and normalityTest directly from spcStats (from stats.measurements[])
+        const allValuesFromStats = spcStats?.allValues && Array.isArray(spcStats.allValues) 
+          ? spcStats.allValues.map((v: any) => Number(v))
           : processValues.map(pv => pv.value);
+        
+        const normalityTestFromStats = spcStats?.normalityTest || null;
 
-        console.log("📊 allValues from stats subgroups:", allValuesFromStats.length, "values");
+        console.log("📊 allValues from stats:", allValuesFromStats.length, "values");
+        console.log("📊 normalityTest from stats:", normalityTestFromStats);
 
         setSpcData({ 
           data: chartData, 
           stats: statisticsData,
-          rawValues: rawValuesFromDB,
+          rawValues: allValuesFromStats,
+          normalityTest: normalityTestFromStats,
           subgroups: spcStats?.subgroups || null,
           processInfo: {
             processNumber: selectedProcess,
@@ -1059,6 +1053,9 @@ const Dashboard = () => {
                   <NormalProbabilityPlot 
                     values={spcData.rawValues}
                     measurementName={`Proceso ${selectedProcess}`}
+                    normalityTest={spcData.normalityTest}
+                    item={spcData.processInfo?.item}
+                    processNumber={selectedProcess}
                   />
                 </div>
               ) : null}
