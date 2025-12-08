@@ -2,21 +2,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ComposedChart, Scatter, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface NormalProbabilityPlotProps {
-  measurement: {
-    allValues: number[];
-    normalityTest: {
-      ad: number;
-      pValue: number;
-      isNormal: boolean;
-    };
-    columnName?: string;
-  };
+  values: number[];
+  measurementName?: string;
 }
 
-// ESTA FUNCIÓN SÍ QUEDA EN FRONTEND (solo para dibujar)
+// Inverse Normal CDF for plotting
 function inverseNormalCDF(p: number): number {
   if (p <= 0 || p >= 1) return p <= 0 ? -Infinity : Infinity;
   const a1 = -39.6968302866538,
@@ -59,10 +52,51 @@ function inverseNormalCDF(p: number): number {
   return x;
 }
 
-export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProps) => {
-  const { allValues, normalityTest, columnName = "Medición" } = measurement;
+// Simple Anderson-Darling test approximation
+function andersonDarlingTest(values: number[]): { ad: number; pValue: number; isNormal: boolean } {
+  const n = values.length;
+  if (n < 3) return { ad: 0, pValue: 1, isNormal: true };
 
-  if (!allValues || allValues.length < 3) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mean = sorted.reduce((a, b) => a + b, 0) / n;
+  const std = Math.sqrt(sorted.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (n - 1));
+
+  if (std === 0) return { ad: 0, pValue: 1, isNormal: true };
+
+  // Standard normal CDF
+  const normalCDF = (x: number) => {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989423 * Math.exp(-x * x / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x > 0 ? 1 - p : p;
+  };
+
+  let S = 0;
+  for (let i = 0; i < n; i++) {
+    const z = (sorted[i] - mean) / std;
+    const F = normalCDF(z);
+    const Fclamp = Math.max(0.0001, Math.min(0.9999, F));
+    S += (2 * (i + 1) - 1) * (Math.log(Fclamp) + Math.log(1 - normalCDF((sorted[n - 1 - i] - mean) / std)));
+  }
+
+  let A2 = -n - S / n;
+  A2 = A2 * (1 + 0.75 / n + 2.25 / (n * n)); // Adjusted statistic
+
+  // Approximate p-value
+  let pValue: number;
+  if (A2 < 0.2) pValue = 1 - Math.exp(-13.436 + 101.14 * A2 - 223.73 * A2 * A2);
+  else if (A2 < 0.34) pValue = 1 - Math.exp(-8.318 + 42.796 * A2 - 59.938 * A2 * A2);
+  else if (A2 < 0.6) pValue = Math.exp(0.9177 - 4.279 * A2 - 1.38 * A2 * A2);
+  else if (A2 < 10) pValue = Math.exp(1.2937 - 5.709 * A2 + 0.0186 * A2 * A2);
+  else pValue = 0;
+
+  pValue = Math.max(0, Math.min(1, pValue));
+
+  return { ad: A2, pValue, isNormal: pValue >= 0.05 };
+}
+
+export const NormalProbabilityPlot = ({ values, measurementName = "Medición" }: NormalProbabilityPlotProps) => {
+  if (!values || values.length < 3) {
     return (
       <Card>
         <CardHeader>
@@ -78,12 +112,11 @@ export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProp
     );
   }
 
-  const n = allValues.length;
-  const ad = normalityTest.ad;
-  const pValue = normalityTest.pValue;
-  const isNormal = normalityTest.isNormal;
+  const normalityTest = andersonDarlingTest(values);
+  const n = values.length;
+  const { ad, pValue, isNormal } = normalityTest;
 
-  const sortedValues = [...allValues].sort((a, b) => a - b);
+  const sortedValues = [...values].sort((a, b) => a - b);
 
   const plotData = sortedValues.map((val, i) => {
     const p = (i + 0.5) / n;
@@ -91,7 +124,7 @@ export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProp
     return { observed: val, theoretical };
   });
 
-  // Línea de referencia
+  // Reference line
   const minObs = sortedValues[0];
   const maxObs = sortedValues[n - 1];
   const minTheo = inverseNormalCDF(0.001);
@@ -104,6 +137,14 @@ export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProp
     { observed: intercept + slope * maxTheo, theoretical: maxTheo },
   ];
 
+  // X-axis ticks at 0.1 intervals
+  const xTickMin = Math.floor(minObs * 10) / 10;
+  const xTickMax = Math.ceil(maxObs * 10) / 10;
+  const xTicks: number[] = [];
+  for (let tick = xTickMin; tick <= xTickMax + 0.0001; tick += 0.1) {
+    xTicks.push(Math.round(tick * 10) / 10);
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -111,7 +152,7 @@ export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProp
           <div>
             <CardTitle>Gráfica de Probabilidad Normal</CardTitle>
             <p className="text-sm text-muted-foreground">
-              {columnName} • n = {n}
+              {measurementName} • n = {n}
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -127,18 +168,33 @@ export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProp
         <ResponsiveContainer width="100%" height={400}>
           <ComposedChart data={plotData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="observed" label={{ value: "Valor Observado", position: "insideBottom" }} />
+            <XAxis 
+              dataKey="observed" 
+              type="number"
+              domain={[xTickMin - 0.05, xTickMax + 0.05]}
+              ticks={xTicks}
+              tickFormatter={(value) => value.toFixed(1)}
+              label={{ value: "Valor Observado", position: "insideBottom", offset: -5 }} 
+            />
             <YAxis dataKey="theoretical" label={{ value: "Percentil Teórico", angle: -90, position: "insideLeft" }} />
-            <Tooltip />
+            <Tooltip 
+              formatter={(value: number, name: string) => [value.toFixed(4), name]}
+              labelFormatter={(label) => `Percentil: ${Number(label).toFixed(3)}`}
+            />
             <Line
               data={referenceLine}
               type="linear"
-              dataKey="observed"
+              dataKey="theoretical"
               stroke="hsl(var(--primary))"
               strokeWidth={2}
               dot={false}
+              name="Línea de referencia"
             />
-            <Scatter dataKey="observed" fill={isNormal ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} />
+            <Scatter 
+              dataKey="theoretical" 
+              fill={isNormal ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} 
+              name="Datos observados"
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </CardContent>
