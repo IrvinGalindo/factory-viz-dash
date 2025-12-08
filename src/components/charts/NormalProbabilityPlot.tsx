@@ -283,7 +283,7 @@ export const NormalProbabilityPlot = ({
                 );
               }}
             />
-            {/* Límite superior */}
+            {/* Límite superior - usando x=observed, y=theoretical */}
             <Line
               data={upperLine}
               type="linear"
@@ -294,6 +294,7 @@ export const NormalProbabilityPlot = ({
               dot={false}
               isAnimationActive={false}
               name="Límite superior 95%"
+              legendType="none"
             />
             {/* Límite inferior */}
             <Line
@@ -306,8 +307,9 @@ export const NormalProbabilityPlot = ({
               dot={false}
               isAnimationActive={false}
               name="Límite inferior 95%"
+              legendType="none"
             />
-            {/* Línea esperada */}
+            {/* Línea esperada (diagonal de referencia) */}
             <Line
               data={expectedLine}
               type="linear"
@@ -317,9 +319,11 @@ export const NormalProbabilityPlot = ({
               dot={false}
               isAnimationActive={false}
               name="Valor esperado"
+              legendType="none"
             />
-            {/* Puntos observados */}
+            {/* Puntos observados del proceso */}
             <Scatter
+              data={plotData}
               dataKey="observed"
               fill={isNormal ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"}
               name="Datos observados"
