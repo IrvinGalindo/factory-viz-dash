@@ -497,24 +497,14 @@ const Dashboard = () => {
           outOfSpecCount: outOfSpecCount,
           status: statusDisplay,
         };
+
         console.log("🎊 Final chart data:", chartData.length, "points");
         console.log("📊 Final statistics:", statisticsData);
-
-        // Get allValues and normalityTest directly from spcStats (from stats.measurements[])
-        const allValuesFromStats = spcStats?.allValues && Array.isArray(spcStats.allValues) 
-          ? spcStats.allValues.map((v: any) => Number(v))
-          : processValues.map(pv => pv.value);
-        
-        const normalityTestFromStats = spcStats?.normalityTest || null;
-
-        console.log("📊 allValues from stats:", allValuesFromStats.length, "values");
-        console.log("📊 normalityTest from stats:", normalityTestFromStats);
 
         setSpcData({ 
           data: chartData, 
           stats: statisticsData,
-          rawValues: allValuesFromStats,
-          normalityTest: normalityTestFromStats,
+          rawValues: processValues.map(pv => pv.value),
           subgroups: spcStats?.subgroups || null,
           processInfo: {
             processNumber: selectedProcess,
@@ -1053,9 +1043,6 @@ const Dashboard = () => {
                   <NormalProbabilityPlot 
                     values={spcData.rawValues}
                     measurementName={`Proceso ${selectedProcess}`}
-                    normalityTest={spcData.normalityTest}
-                    item={spcData.processInfo?.item}
-                    processNumber={selectedProcess}
                   />
                 </div>
               ) : null}
