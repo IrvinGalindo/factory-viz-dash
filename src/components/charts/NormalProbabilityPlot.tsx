@@ -15,18 +15,15 @@ import {
 import { AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 
 interface NormalProbabilityPlotProps {
-  measurement: {
-    allValues: number[];
-    normalityTest?: {
-      ad: number;
-      pValue: number;
-      isNormal: boolean;
-    };
-    avg: number;
-    columnName?: string;
-    processNumber?: string;
-    item?: string;
+  values: number[];
+  measurementName?: string;
+  normalityTest?: {
+    ad: number;
+    pValue: number;
+    isNormal: boolean;
   };
+  item?: string;
+  processNumber?: string;
 }
 
 // Función para calcular la inversa de la CDF normal (approximación)
@@ -77,11 +74,17 @@ function inverseNormalCDF(p: number): number {
   return x;
 }
 
-export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProps) => {
-  const { allValues, normalityTest, columnName = "Medición", processNumber = "", item = "" } = measurement;
+export const NormalProbabilityPlot = ({ 
+  values, 
+  measurementName = "Medición",
+  normalityTest,
+  item = "",
+  processNumber = ""
+}: NormalProbabilityPlotProps) => {
+  const allValues = values || [];
   const ad = normalityTest?.ad ?? 0;
   const pValue = normalityTest?.pValue ?? 0;
-  const isNormal = normalityTest?.isNormal ?? false;
+  const isNormal = normalityTest?.isNormal ?? (pValue > 0.05);
 
   if (!allValues || allValues.length < 3) {
     return (
@@ -179,7 +182,7 @@ export const NormalProbabilityPlot = ({ measurement }: NormalProbabilityPlotProp
           <div>
             <CardTitle className="text-xl text-card-foreground mb-2">Gráfica de Probabilidad Normal</CardTitle>
             <p className="text-sm text-muted-foreground">
-              {processNumber} • {item} • {columnName} • n = {n} mediciones
+              {measurementName} {item ? `• ${item}` : ""} • n = {n} mediciones
             </p>
           </div>
           <div className="flex flex-col gap-2">
