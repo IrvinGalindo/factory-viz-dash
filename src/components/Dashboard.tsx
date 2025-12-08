@@ -497,14 +497,30 @@ const Dashboard = () => {
           outOfSpecCount: outOfSpecCount,
           status: statusDisplay,
         };
-
         console.log("🎊 Final chart data:", chartData.length, "points");
         console.log("📊 Final statistics:", statisticsData);
+
+        // Extract allValues from subgroups in stats (from spc_statistics table)
+        let allValuesFromStats: number[] = [];
+        if (spcStats?.subgroups && Array.isArray(spcStats.subgroups)) {
+          spcStats.subgroups.forEach((subgroup: any) => {
+            if (subgroup.values && Array.isArray(subgroup.values)) {
+              allValuesFromStats.push(...subgroup.values.map((v: any) => Number(v)));
+            }
+          });
+        }
+        
+        // Fallback to processValues if no subgroup values available
+        const rawValuesFromDB = allValuesFromStats.length > 0 
+          ? allValuesFromStats 
+          : processValues.map(pv => pv.value);
+
+        console.log("📊 allValues from stats subgroups:", allValuesFromStats.length, "values");
 
         setSpcData({ 
           data: chartData, 
           stats: statisticsData,
-          rawValues: processValues.map(pv => pv.value),
+          rawValues: rawValuesFromDB,
           subgroups: spcStats?.subgroups || null,
           processInfo: {
             processNumber: selectedProcess,
