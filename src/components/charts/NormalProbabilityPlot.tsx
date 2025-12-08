@@ -75,13 +75,14 @@ function inverseNormalCDF(p: number): number {
 }
 
 export const NormalProbabilityPlot = ({ 
-  values, 
+  values = [], 
   measurementName = "Medición",
   normalityTest,
   item = "",
   processNumber = ""
 }: NormalProbabilityPlotProps) => {
-  const allValues = values || [];
+  // Handle cases where values might be undefined or empty
+  const allValues = Array.isArray(values) ? values : [];
   const ad = normalityTest?.ad ?? 0;
   const pValue = normalityTest?.pValue ?? 0;
   const isNormal = normalityTest?.isNormal ?? (pValue > 0.05);
