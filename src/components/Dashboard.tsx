@@ -25,6 +25,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, ChevronsUpDown } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 import { SPCChart } from "@/components/charts/SPCChart";
 import { CapabilityHistogramChart } from "@/components/charts/CapabilityHistogramChart";
@@ -34,57 +35,92 @@ import { SChart } from "@/components/charts/SChart";
 export default function Dashboard() {
   const [selectedMachine, setSelectedMachine] = useState("");
   const [selectedProcess, setSelectedProcess] = useState("");
-  const [machines, setMachines] = useState<{ machine_id: string; cmm_name: string; line: string }[]>([]);
+  const [machines, setMachines] = useState<{ machine_id: string; cmm_name: string | null; line: string | null }[]>([]);
   const [processes, setProcesses] = useState<string[]>([]);
   const [spcData, setSpcData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
 
-  // Cargar máquinas
+  // Cargar máquinas desde Supabase
   useEffect(() => {
-    fetch("/api/machines")
-      .then(r => r.json())
-      .then(data => {
-        setMachines(data);
-        if (data.length > 0) setSelectedMachine(data[0].machine_id);
+    const fetchMachines = async () => {
+      const { data, error } = await supabase
+        .from('machines')
+        .select('machine_id, cmm_name, line');
+      
+      if (error) {
+        console.error('Error fetching machines:', error);
         setLoading(false);
-      });
+        return;
+      }
+      
+      setMachines(data || []);
+      if (data && data.length > 0) {
+        setSelectedMachine(data[0].machine_id);
+      }
+      setLoading(false);
+    };
+    
+    fetchMachines();
   }, []);
 
   // Cargar procesos cuando cambia máquina
   useEffect(() => {
     if (!selectedMachine) return;
-    fetch(`/api/processes/${selectedMachine}`)
-      .then(r => r.json())
-      .then(data => {
-        setProcesses(data);
-        if (data.length > 0) setSelectedProcess(data[0]);
-      });
+    
+    const fetchProcesses = async () => {
+      const { data, error } = await supabase
+        .from('result_process')
+        .select('result_process_id')
+        .eq('machine_id', selectedMachine);
+      
+      if (error) {
+        console.error('Error fetching processes:', error);
+        return;
+      }
+      
+      const processIds = data?.map(p => p.result_process_id) || [];
+      setProcesses(processIds);
+      if (processIds.length > 0) {
+        setSelectedProcess(processIds[0]);
+      }
+    };
+    
+    fetchProcesses();
   }, [selectedMachine]);
 
-  // CARGAR DATOS DEL BACKEND
+  // Cargar datos SPC
   useEffect(() => {
     if (!selectedMachine || !selectedProcess) {
       setSpcData(null);
       return;
     }
 
-    fetch(`/api/spc/machine/${selectedMachine}?process=${selectedProcess}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.measurements && data.measurements.length > 0) {
-          const measurement = data.measurements.find((m: any) => 
-            m.processNumber === selectedProcess
-          );
-          if (measurement) {
-            setSpcData({
-              stats: measurement,
-              rawValues: measurement.allValues || [],
-              subgroups: measurement.subgroups || []
-            });
-          }
-        }
-      });
+    const fetchSpcData = async () => {
+      const { data, error } = await supabase
+        .from('spc_statistics')
+        .select('*')
+        .eq('result_process_id', selectedProcess);
+      
+      if (error) {
+        console.error('Error fetching SPC data:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const stats = data[0].stats as any;
+        setSpcData({
+          stats: {
+            ...stats,
+            processNumber: data[0].measurement_name
+          },
+          rawValues: stats?.allValues || [],
+          subgroups: stats?.subgroups || []
+        });
+      }
+    };
+    
+    fetchSpcData();
   }, [selectedMachine, selectedProcess]);
 
   if (loading) return <div className="p-8 text-center text-2xl">Cargando...</div>;
