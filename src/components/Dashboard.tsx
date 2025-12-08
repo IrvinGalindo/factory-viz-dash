@@ -179,7 +179,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <NormalProbabilityPlot measurement={measurement} />
+            <NormalProbabilityPlot values={measurement.allValues || []} measurementName={measurement.processNumber} />
 
             <Card>
               <CardHeader>
@@ -199,7 +199,10 @@ export default function Dashboard() {
                     pp: measurement.pp,
                     ppk: measurement.ppk,
                     sampleCount: measurement.sampleCount,
-                    outOfSpecCount: measurement.outOfSpecCount
+                    outOfSpecCount: measurement.outOfSpecCount,
+                    ucl: measurement.ucl,
+                    lcl: measurement.lcl,
+                    withinSpecCount: measurement.sampleCount - (measurement.outOfSpecCount || 0)
                   }}
                 />
               </CardContent>
