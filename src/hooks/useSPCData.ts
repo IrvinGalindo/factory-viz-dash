@@ -1,4 +1,7 @@
+// src/hooks/useSPCData.ts
 import { useState, useEffect } from 'react';
+
+const API_BASE_URL = "https://spc-backend-nsa2.onrender.com";
 
 interface SPCData {
   stats: any;
@@ -23,18 +26,18 @@ export const useSPCData = (
       return;
     }
 
-    let url = `/api/spc/machine/${machineId}?process=${process}`;
+    let url = `${API_BASE_URL}/api/spc/machine/${machineId}?process=${process}`;
     if (fromDate) url += `&from=${fromDate}`;
     if (toDate) url += `&to=${toDate}`;
 
     setLoading(true);
     fetch(url)
       .then(res => {
-        if (!res.ok) throw new Error('Error en API');
+        if (!res.ok) throw new Error(`Error ${res.status}`);
         return res.json();
       })
       .then((response: any) => {
-        if (response.measurements && response.measurements.length > 0) {
+        if (response.measurements?.length > 0) {
           const measurement = response.measurements.find(
             (m: any) => m.processNumber === process
           );
@@ -53,8 +56,8 @@ export const useSPCData = (
         setLoading(false);
       })
       .catch(err => {
-        console.error('Error:', err);
-        setError('No se pudieron cargar los datos');
+        console.error('Error cargando SPC:', err);
+        setError('No se pudo conectar al servidor SPC');
         setLoading(false);
       });
   }, [machineId, process, fromDate, toDate]);
