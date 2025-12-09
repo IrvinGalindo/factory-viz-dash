@@ -32,6 +32,8 @@ import { CapabilityHistogramChart } from "@/components/charts/CapabilityHistogra
 import { NormalProbabilityPlot } from "@/components/charts/NormalProbabilityPlot";
 import { SChart } from "@/components/charts/SChart";
 
+const API_BASE_URL = "https://spc-backend-nsa2.onrender.com";
+
 export default function Dashboard() {
   const [selectedMachine, setSelectedMachine] = useState("");
   const [selectedProcess, setSelectedProcess] = useState("");
@@ -44,16 +46,19 @@ export default function Dashboard() {
 
   // Cargar máquinas
   useEffect(() => {
-    fetch("/api/machines")
+    fetch(`${API_BASE_URL}/api/machines`)
       .then(r => r.json())
-      .then(setMachines)
+      .then(data => {
+        setMachines(data);
+        if (data.length > 0) setSelectedMachine(data[0].machine_id);
+      })
       .catch(console.error);
   }, []);
 
   // Cargar procesos
   useEffect(() => {
     if (selectedMachine) {
-      fetch(`/api/processes/${selectedMachine}`)
+      fetch(`${API_BASE_URL}/api/processes/${selectedMachine}`)
         .then(r => r.json())
         .then(setProcesses)
         .catch(console.error);
