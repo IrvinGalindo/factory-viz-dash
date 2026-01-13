@@ -153,6 +153,24 @@ export type Database = {
           },
         ]
       }
+      smart_flows_chat_history: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
       spc_statistics: {
         Row: {
           created_at: string | null
