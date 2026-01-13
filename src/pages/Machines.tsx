@@ -7,15 +7,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit, Trash2, Settings, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Machine {
-  machine_id: string;
-  cmm_name: string | null;
-  line: string | null;
-  process: string | null;
-  created_at: string;
-}
+import {
+  fetchMachines as apiFetchMachines,
+  createMachine as apiCreateMachine,
+  updateMachine as apiUpdateMachine,
+  deleteMachine as apiDeleteMachine,
+  Machine,
+} from '@/services/spcApi';
 
 const Machines = () => {
   const { toast } = useToast();
@@ -38,12 +36,7 @@ const Machines = () => {
   const fetchMachines = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('machines')
-        .select('*')
-        .order('created_at', { ascending: false }) as any;
-
-      if (error) throw error;
+      const data = await apiFetchMachines();
       setMachines(data || []);
     } catch (error) {
       console.error('Error fetching machines:', error);
@@ -68,18 +61,13 @@ const Machines = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('machines')
-        .insert([{
-          cmm_name: formData.cmm_name,
-          line: formData.line,
-          process: formData.process
-        }])
-        .select() as any;
+      const newMachine = await apiCreateMachine({
+        cmm_name: formData.cmm_name,
+        line: formData.line,
+        process: formData.process
+      });
 
-      if (error) throw error;
-
-      setMachines([...machines, ...data] as any);
+      setMachines([newMachine, ...machines]);
       setFormData({ cmm_name: '', line: '', process: '' });
       setIsCreateDialogOpen(false);
 
@@ -108,21 +96,15 @@ const Machines = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('machines')
-        .update({
-          cmm_name: formData.cmm_name,
-          line: formData.line,
-          process: formData.process
-        })
-        .eq('machine_id', editingMachine.machine_id)
-        .select() as any;
-
-      if (error) throw error;
+      const updatedMachine = await apiUpdateMachine(editingMachine.machine_id, {
+        cmm_name: formData.cmm_name,
+        line: formData.line,
+        process: formData.process
+      });
 
       setMachines(machines.map(machine => 
-        machine.machine_id === editingMachine.machine_id ? data[0] : machine
-      ) as any);
+        machine.machine_id === editingMachine.machine_id ? updatedMachine : machine
+      ));
       
       setFormData({ cmm_name: '', line: '', process: '' });
       setEditingMachine(null);
@@ -144,13 +126,7 @@ const Machines = () => {
 
   const handleDeleteMachine = async (machineId: string) => {
     try {
-      const { error } = await supabase
-        .from('machines')
-        .delete()
-        .eq('machine_id', machineId);
-
-      if (error) throw error;
-
+      await apiDeleteMachine(machineId);
       setMachines(machines.filter(machine => machine.machine_id !== machineId));
       toast({
         title: "Máquina eliminada",
