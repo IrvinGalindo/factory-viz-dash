@@ -48,8 +48,9 @@ import {
 } from "@/services/spcApi";
 
 const Dashboard = () => {
-  const [selectedMachine, setSelectedMachine] = useState("");
-  const [machines, setMachines] = useState<Array<{ line: string; cmm_name: string }>>([]);
+  const [selectedMachineId, setSelectedMachineId] = useState("");
+  const [selectedMachineLine, setSelectedMachineLine] = useState("");
+  const [machines, setMachines] = useState<Array<{ machine_id: string; line: string; cmm_name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedProcess, setSelectedProcess] = useState("");
@@ -76,8 +77,9 @@ const Dashboard = () => {
         setMachines(data);
 
         if (data.length > 0) {
-          console.log("🎯 Seleccionando primera máquina:", data[0].line);
-          setSelectedMachine(data[0].line);
+          console.log("🎯 Seleccionando primera máquina:", data[0].machine_id, data[0].line);
+          setSelectedMachineId(data[0].machine_id);
+          setSelectedMachineLine(data[0].line);
         }
       } catch (err: any) {
         console.error("💥 Error en loadMachines:", err);
@@ -93,15 +95,15 @@ const Dashboard = () => {
   // Fetch processes when machine is selected
   useEffect(() => {
     const loadProcesses = async () => {
-      if (!selectedMachine) {
+      if (!selectedMachineId) {
         setProcesses([]);
         setSelectedProcess("");
         return;
       }
 
       try {
-        console.log("🔍 Buscando procesos para máquina:", selectedMachine);
-        const processNumbers = await fetchProcessNumbers(selectedMachine);
+        console.log("🔍 Buscando procesos para máquina:", selectedMachineId);
+        const processNumbers = await fetchProcessNumbers(selectedMachineId);
         console.log("📋 Procesos encontrados:", processNumbers);
 
         setProcesses(processNumbers);
@@ -117,12 +119,12 @@ const Dashboard = () => {
     };
 
     loadProcesses();
-  }, [selectedMachine]);
+  }, [selectedMachineId]);
 
   // Fetch SPC data when machine and process are selected
   useEffect(() => {
     const loadSPCData = async () => {
-      if (!selectedMachine || !selectedProcess) {
+      if (!selectedMachineId || !selectedProcess) {
         setSpcData(null);
         return;
       }
@@ -137,13 +139,14 @@ const Dashboard = () => {
           : undefined;
 
         console.log("🎯 Buscando datos SPC para:", {
-          machine: selectedMachine,
+          machineId: selectedMachineId,
+          machineLine: selectedMachineLine,
           process: selectedProcess,
           dateRange: { fromDate, toDate },
         });
 
         const apiData = await fetchSPCChartData(
-          selectedMachine,
+          selectedMachineId,
           selectedProcess,
           fromDate,
           toDate
@@ -226,9 +229,9 @@ const Dashboard = () => {
     };
 
     loadSPCData();
-  }, [selectedMachine, selectedProcess, dateRange]);
+  }, [selectedMachineId, selectedProcess, dateRange]);
 
-  const data = selectedMachine ? generateMockData(selectedMachine) : null;
+  const data = selectedMachineId ? generateMockData(selectedMachineLine) : null;
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
@@ -426,7 +429,7 @@ const Dashboard = () => {
                     aria-expanded={machineOpen}
                     className="w-full justify-between"
                   >
-                    {selectedMachine || "Seleccionar máquina..."}
+                    {selectedMachineLine || "Seleccionar máquina..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -437,16 +440,17 @@ const Dashboard = () => {
                     <CommandGroup>
                       {machines.map((machine, index) => (
                         <CommandItem
-                          key={`${machine.line}-${index}`}
+                          key={`${machine.machine_id}-${index}`}
                           value={machine.line.toLowerCase()}
                           onSelect={() => {
-                            setSelectedMachine(machine.line);
+                            setSelectedMachineId(machine.machine_id);
+                            setSelectedMachineLine(machine.line);
                             setMachineOpen(false);
                           }}
                         >
                           <Check
                             className={`mr-2 h-4 w-4 ${
-                              selectedMachine === machine.line
+                              selectedMachineId === machine.machine_id
                                 ? "opacity-100"
                                 : "opacity-0"
                             }`}
@@ -463,7 +467,7 @@ const Dashboard = () => {
         </div>
 
         {/* Solo mostrar charts si hay una máquina seleccionada */}
-        {selectedMachine && data && (
+        {selectedMachineId && data && (
           <>
             {/* SPC Control Chart Section */}
             <Card>
@@ -472,7 +476,7 @@ const Dashboard = () => {
                   <div>
                     <CardTitle>Control Estadístico de Procesos (SPC)</CardTitle>
                     <CardDescription>
-                      Gráfico de control para la máquina: {selectedMachine}
+                      Gráfico de control para la máquina: {selectedMachineLine}
                       {dateRange.from && dateRange.to && (
                         <span className="ml-2 text-xs text-muted-foreground">
                           (
@@ -807,7 +811,7 @@ const Dashboard = () => {
                 <CardTitle>Recomendaciones</CardTitle>
                 <CardDescription>
                   Sugerencias basadas en el análisis de datos de la máquina:{" "}
-                  {selectedMachine}
+                  {selectedMachineLine}
                 </CardDescription>
               </CardHeader>
               <CardContent>

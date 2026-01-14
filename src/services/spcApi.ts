@@ -115,7 +115,7 @@ export const deleteMachine = async (machineId: string): Promise<void> => {
 
 // ================== SPC API ==================
 
-export const fetchSPCMachines = async (): Promise<Array<{ line: string; cmm_name: string }>> => {
+export const fetchSPCMachines = async (): Promise<Array<{ machine_id: string; line: string; cmm_name: string }>> => {
   const response = await fetch(`${API_BASE_URL}/spc/machines`);
   if (!response.ok) {
     throw new Error("Error al obtener las máquinas SPC");
@@ -134,12 +134,12 @@ export const fetchProcessNumbers = async (machineId: string): Promise<string[]> 
 };
 
 export const fetchSPCChartData = async (
-  line: string,
+  machineId: string,
   processNumber: string,
   fromDate?: string,
   toDate?: string
 ): Promise<SPCChartData | null> => {
-  let url = `${API_BASE_URL}/spc/chart-data?line=${encodeURIComponent(line)}&processNumber=${encodeURIComponent(processNumber)}`;
+  let url = `${API_BASE_URL}/spc/chart-data?machine_id=${encodeURIComponent(machineId)}&processNumber=${encodeURIComponent(processNumber)}`;
   
   if (fromDate) {
     url += `&from=${encodeURIComponent(fromDate)}`;
