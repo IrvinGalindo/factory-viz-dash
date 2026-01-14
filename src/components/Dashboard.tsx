@@ -152,59 +152,67 @@ const Dashboard = () => {
           toDate
         );
 
-        if (!apiData) {
+        if (!apiData || !apiData.measurements || apiData.measurements.length === 0) {
           console.log("⚠️ No hay datos SPC disponibles");
           setSpcData(null);
           return;
         }
 
-        // Transform API data to dashboard format
-        const chartData = apiData.values.map((value, index) => ({
+        // Get the first measurement (the API returns measurements array)
+        const measurement = apiData.measurements[0];
+        
+        // The API doesn't return individual values, so we generate placeholder points based on sampleCount
+        // In a real scenario, you might need an endpoint that returns individual measurements
+        const sampleCount = measurement.sampleCount || 1;
+        const chartData = Array.from({ length: sampleCount }, (_, index) => ({
           point: index + 1,
-          value: value,
-          ucl: apiData.statistics.ucl,
-          lcl: apiData.statistics.lcl,
-          avg: apiData.statistics.avg,
-          spec: apiData.statistics.nominal,
-          min: apiData.statistics.min,
-          max: apiData.statistics.max,
-          specUpper: apiData.statistics.usl,
-          specLower: apiData.statistics.lsl,
+          value: measurement.avg, // Using avg as placeholder since individual values aren't provided
+          ucl: measurement.ucl,
+          lcl: measurement.lcl,
+          avg: measurement.avg,
+          spec: measurement.nominal,
+          min: measurement.min,
+          max: measurement.max,
+          specUpper: measurement.upperSpecLimit,
+          specLower: measurement.lowerSpecLimit,
           date: `Punto ${index + 1}`,
         }));
 
         const statusDisplay =
-          apiData.statistics.status === "in_control"
+          measurement.status === "in_control"
             ? "Conforme"
-            : apiData.statistics.status === "out_of_control"
+            : measurement.status === "out_of_control"
             ? "Fuera de Control"
-            : apiData.statistics.status === "warning"
+            : measurement.status === "warning"
             ? "Advertencia"
-            : apiData.statistics.status === "insufficient_data"
+            : measurement.status === "insufficient_data"
             ? "Datos Insuficientes"
             : "Desconocido";
 
         const statisticsData = {
-          spec: apiData.statistics.nominal,
-          specDisplay: `${apiData.statistics.nominal}`,
-          specUpper: apiData.statistics.usl,
-          specLower: apiData.statistics.lsl,
-          ucl: apiData.statistics.ucl,
-          lcl: apiData.statistics.lcl,
-          avg: apiData.statistics.avg,
-          std: apiData.statistics.stdWithin,
-          stdWithin: apiData.statistics.stdWithin,
-          stdOverall: apiData.statistics.stdOverall,
-          max: apiData.statistics.max,
-          min: apiData.statistics.min,
-          cp: apiData.statistics.cp,
-          cpk: apiData.statistics.cpk,
-          pp: apiData.statistics.pp,
-          ppk: apiData.statistics.ppk,
-          sampleCount: apiData.statistics.sampleCount,
-          measurementName: `Proceso ${selectedProcess}`,
-          outOfSpecCount: apiData.statistics.outOfSpecCount,
+          spec: measurement.nominal,
+          specDisplay: `${measurement.nominal}`,
+          specUpper: measurement.upperSpecLimit,
+          specLower: measurement.lowerSpecLimit,
+          ucl: measurement.ucl,
+          lcl: measurement.lcl,
+          avg: measurement.avg,
+          std: measurement.stdWithin,
+          stdWithin: measurement.stdWithin,
+          stdOverall: measurement.stdOverall,
+          max: measurement.max,
+          min: measurement.min,
+          cp: measurement.cp,
+          cpk: measurement.cpk,
+          pp: measurement.pp,
+          ppk: measurement.ppk,
+          sampleCount: measurement.sampleCount,
+          measurementName: `${measurement.item} - ${measurement.columnName}`,
+          outOfSpecCount: measurement.outOfSpecCount,
+          outOfControlCount: measurement.outOfControlCount,
           status: statusDisplay,
+          rBar: measurement.rBar,
+          d2: measurement.d2,
         };
 
         console.log("🎊 Final chart data:", chartData.length, "points");
@@ -213,11 +221,11 @@ const Dashboard = () => {
         setSpcData({
           data: chartData,
           stats: statisticsData,
-          rawValues: apiData.values,
-          subgroups: apiData.subgroups || null,
+          rawValues: [], // API doesn't provide individual values
+          subgroups: measurement.subgroups || null,
           processInfo: {
             processNumber: selectedProcess,
-            item: apiData.itemName || "",
+            item: measurement.item || "",
           },
         });
       } catch (err) {

@@ -8,39 +8,51 @@ export interface Machine {
   created_at: string;
 }
 
-export interface SPCChartData {
-  machineId: string;
-  machineName: string;
-  processNumber: string;
-  itemName: string;
-  statistics: {
-    avg: number;
-    stdWithin: number;
-    stdOverall: number;
-    ucl: number;
-    lcl: number;
-    usl: number;
-    lsl: number;
-    nominal: number;
-    cp: number;
-    cpk: number;
-    pp: number;
-    ppk: number;
-    sampleCount: number;
-    outOfSpecCount: number;
-    outOfControlCount: number;
-    status: string;
-    max: number;
-    min: number;
-  };
-  values: number[];
+export interface SPCMeasurement {
+  cp: number;
+  cpk: number;
+  pp: number;
+  ppk: number;
+  avg: number;
+  ucl: number;
+  lcl: number;
+  max: number;
+  min: number;
+  item: string;
+  rBar: number;
+  d2: number;
+  status: string;
+  nominal: number;
+  stdWithin: number;
+  stdOverall: number;
+  columnName: string;
+  sampleCount: number;
+  processNumber: number;
+  lowerSpecLimit: number;
+  upperSpecLimit: number;
+  lowerTolerance: number;
+  upperTolerance: number;
+  outOfSpecCount: number;
+  outOfControlCount: number;
   subgroups: Array<{
     subgroupNumber: number;
     values: number[];
     average: number;
     range: number;
     size: number;
-  }>;
+  }> | null;
+}
+
+export interface SPCChartData {
+  machineId: string;
+  machine_id: string;
+  line: string;
+  totalGroups: number;
+  calculatedAt: string;
+  calculationMethod: string;
+  lastResultProcessId: string;
+  totalSamplesProcessed: number;
+  measurements: SPCMeasurement[];
 }
 
 export interface CreateMachineData {
