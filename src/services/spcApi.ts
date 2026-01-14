@@ -123,9 +123,9 @@ export const fetchSPCMachines = async (): Promise<Array<{ line: string; cmm_name
   return response.json();
 };
 
-export const fetchProcessNumbers = async (line: string): Promise<string[]> => {
+export const fetchProcessNumbers = async (machineId: string): Promise<string[]> => {
   const response = await fetch(
-    `${API_BASE_URL}/spc/processes?line=${encodeURIComponent(line)}`
+    `${API_BASE_URL}/spc/processes?machine_id=${encodeURIComponent(machineId)}`
   );
   if (!response.ok) {
     throw new Error("Error al obtener los procesos");
