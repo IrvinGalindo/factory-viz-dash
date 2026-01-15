@@ -145,12 +145,31 @@ export const fetchProcessNumbers = async (machineId: string): Promise<string[]> 
   return response.json();
 };
 
+export interface SPCApiResponse {
+  success: boolean;
+  machine_id: string;
+  result_process_id: string;
+  process_id: string;
+  spc_statistics_id: string;
+  statistics: {
+    machineId: string;
+    totalGroups: number;
+    calculatedAt: string;
+    values: number[];
+    measurements: SPCMeasurement[];
+    calculationMethod: string;
+    lastResultProcessId: string;
+    totalSamplesProcessed: number;
+  };
+  message: string;
+}
+
 export const fetchSPCChartData = async (
   machineId: string,
   processNumber: string,
   fromDate?: string,
   toDate?: string
-): Promise<SPCChartData | null> => {
+): Promise<SPCApiResponse | null> => {
   let url = `${API_BASE_URL}/spc/chart-data?machine_id=${encodeURIComponent(machineId)}&processNumber=${encodeURIComponent(processNumber)}`;
   
   if (fromDate) {
