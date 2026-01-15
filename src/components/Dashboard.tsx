@@ -132,10 +132,10 @@ const Dashboard = () => {
       setSpcLoading(true);
       try {
         const fromDate = dateRange.from
-          ? format(dateRange.from, "yyyy-MM-dd")
+          ? format(dateRange.from, "dd/MM/yyyy")
           : undefined;
         const toDate = dateRange.to
-          ? format(new Date(dateRange.to.getTime() + 86400000), "yyyy-MM-dd")
+          ? format(new Date(dateRange.to.getTime() + 86400000), "dd/MM/yyyy")
           : undefined;
 
         console.log("🎯 Buscando datos SPC para:", {
