@@ -44,7 +44,7 @@ import {
   fetchSPCMachines,
   fetchProcessNumbers,
   fetchSPCChartData,
-  SPCChartData,
+  SPCApiResponse,
 } from "@/services/spcApi";
 
 const Dashboard = () => {
@@ -152,21 +152,20 @@ const Dashboard = () => {
           toDate
         );
 
-        if (!apiData || !apiData.measurements || apiData.measurements.length === 0) {
+        if (!apiData || !apiData.statistics || !apiData.statistics.measurements || apiData.statistics.measurements.length === 0) {
           console.log("⚠️ No hay datos SPC disponibles");
           setSpcData(null);
           return;
         }
 
-        // Get the first measurement (the API returns measurements array)
-        const measurement = apiData.measurements[0];
+        // Get values and measurements from the new API structure
+        const rawValues = apiData.statistics.values || [];
+        const measurement = apiData.statistics.measurements[0];
         
-        // The API doesn't return individual values, so we generate placeholder points based on sampleCount
-        // In a real scenario, you might need an endpoint that returns individual measurements
-        const sampleCount = measurement.sampleCount || 1;
-        const chartData = Array.from({ length: sampleCount }, (_, index) => ({
+        // Create chart data using actual values from the API
+        const chartData = rawValues.map((value, index) => ({
           point: index + 1,
-          value: measurement.avg, // Using avg as placeholder since individual values aren't provided
+          value: value,
           ucl: measurement.ucl,
           lcl: measurement.lcl,
           avg: measurement.avg,
@@ -177,6 +176,8 @@ const Dashboard = () => {
           specLower: measurement.lowerSpecLimit,
           date: `Punto ${index + 1}`,
         }));
+
+        console.log("📊 Raw values from API:", rawValues.length, "values");
 
         const statusDisplay =
           measurement.status === "in_control"
@@ -221,7 +222,7 @@ const Dashboard = () => {
         setSpcData({
           data: chartData,
           stats: statisticsData,
-          rawValues: [], // API doesn't provide individual values
+          rawValues: rawValues,
           subgroups: measurement.subgroups || null,
           processInfo: {
             processNumber: selectedProcess,
