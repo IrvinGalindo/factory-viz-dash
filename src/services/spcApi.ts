@@ -146,22 +146,16 @@ export const fetchProcessNumbers = async (machineId: string): Promise<string[]> 
 };
 
 export interface SPCApiResponse {
-  success: boolean;
+  values: number[];
+  machineId: string;
   machine_id: string;
-  result_process_id: string;
-  process_id: string;
-  spc_statistics_id: string;
-  statistics: {
-    machineId: string;
-    totalGroups: number;
-    calculatedAt: string;
-    values: number[];
-    measurements: SPCMeasurement[];
-    calculationMethod: string;
-    lastResultProcessId: string;
-    totalSamplesProcessed: number;
-  };
-  message: string;
+  line: string;
+  totalGroups: number;
+  calculatedAt: string;
+  measurements: SPCMeasurement[];
+  calculationMethod: string;
+  lastResultProcessId: string;
+  totalSamplesProcessed: number;
 }
 
 export const fetchSPCChartData = async (
