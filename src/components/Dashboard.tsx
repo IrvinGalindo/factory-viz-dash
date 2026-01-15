@@ -152,15 +152,15 @@ const Dashboard = () => {
           toDate
         );
 
-        if (!apiData || !apiData.statistics || !apiData.statistics.measurements || apiData.statistics.measurements.length === 0) {
+        if (!apiData || !apiData.measurements || apiData.measurements.length === 0) {
           console.log("⚠️ No hay datos SPC disponibles");
           setSpcData(null);
           return;
         }
 
-        // Get values and measurements from the new API structure
-        const rawValues = apiData.statistics.values || [];
-        const measurement = apiData.statistics.measurements[0];
+        // Get values and measurements from the API (values at root level)
+        const rawValues = apiData.values || [];
+        const measurement = apiData.measurements[0];
         
         // Create chart data using actual values from the API
         const chartData = rawValues.map((value, index) => ({
