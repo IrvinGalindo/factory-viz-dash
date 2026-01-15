@@ -164,13 +164,13 @@ export const fetchSPCChartData = async (
   fromDate?: string,
   toDate?: string
 ): Promise<SPCApiResponse | null> => {
-  let url = `${API_BASE_URL}/spc/chart-data?machine_id=${encodeURIComponent(machineId)}&processNumber=${encodeURIComponent(processNumber)}`;
+  let url = `${API_BASE_URL}/spc/chart-data?machine_id=${encodeURIComponent(machineId)}&process_number=${encodeURIComponent(processNumber)}`;
   
   if (fromDate) {
-    url += `&from=${encodeURIComponent(fromDate)}`;
+    url += `&from_date=${encodeURIComponent(fromDate)}`;
   }
   if (toDate) {
-    url += `&to=${encodeURIComponent(toDate)}`;
+    url += `&to_date=${encodeURIComponent(toDate)}`;
   }
 
   const response = await fetch(url);
