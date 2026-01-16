@@ -135,7 +135,7 @@ const Dashboard = () => {
           ? format(dateRange.from, "dd/MM/yyyy")
           : undefined;
         const toDate = dateRange.to
-          ? format(new Date(dateRange.to.getTime() + 86400000), "dd/MM/yyyy")
+          ? format(dateRange.to, "dd/MM/yyyy")
           : undefined;
 
         console.log("🎯 Buscando datos SPC para:", {
