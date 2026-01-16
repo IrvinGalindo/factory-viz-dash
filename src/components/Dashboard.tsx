@@ -23,9 +23,6 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { generateMockData } from "@/data/mockData";
 import { CapabilityHistogramChart } from "@/components/charts/CapabilityHistogramChart";
-import { ProductionChart } from "@/components/charts/ProductionChart";
-import { StatusChart } from "@/components/charts/StatusChart";
-import { TemperatureChart } from "@/components/charts/TemperatureChart";
 import { SPCChart } from "@/components/charts/SPCChart";
 import { SChart } from "@/components/charts/SChart";
 import { NormalProbabilityPlot } from "@/components/charts/NormalProbabilityPlot";
@@ -777,41 +774,6 @@ const Dashboard = () => {
                 </div>
               ) : null}
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Producción vs Objetivo</CardTitle>
-                  <CardDescription>
-                    Comparación mensual de producción
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ProductionChart data={data.production} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Estado de la Máquina</CardTitle>
-                  <CardDescription>
-                    Distribución del tiempo operativo
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <StatusChart data={data.status} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Temperatura</CardTitle>
-                  <CardDescription>
-                    Monitoreo térmico durante el día
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TemperatureChart data={data.temperature} />
-                </CardContent>
-              </Card>
             </div>
 
             {/* Recommendations Section */}
