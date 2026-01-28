@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Users from "./pages/Users";
 import Machines from "./pages/Machines";
 import Settings from "./pages/Settings";
+import Alerts from "./pages/Alerts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
             <Route index element={<Index />} />
             <Route path="users" element={<Users />} />
             <Route path="machines" element={<Machines />} />
+            <Route path="alerts" element={<Alerts />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

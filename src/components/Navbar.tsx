@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, Users, Settings, LogOut, Cog } from 'lucide-react';
+import { BarChart3, Users, Settings, LogOut, Cog, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Navbar = () => {
@@ -12,6 +12,11 @@ const Navbar = () => {
       to: '/',
       label: 'Dashboard',
       icon: BarChart3,
+    },
+    {
+      to: '/alerts',
+      label: 'Alertas',
+      icon: Bell,
     },
     {
       to: '/users',
