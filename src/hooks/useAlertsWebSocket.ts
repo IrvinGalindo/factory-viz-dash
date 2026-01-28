@@ -56,17 +56,50 @@ export const useAlertsWebSocket = ({
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          console.log("📨 Alerta recibida en tiempo real:", data);
+          const message = JSON.parse(event.data);
+          console.log("📨 Alerta recibida en tiempo real:", message);
           
           // Handle different message types
-          if (data.type === "alert" || data.alert_id) {
-            const alert: Alert = data.alert || data;
+          if (message.type === "alert" && message.data) {
+            // WebSocket sends { type: "alert", timestamp: "...", data: { alert fields } }
+            const alertData = message.data;
+            const alert: Alert = {
+              alert_id: alertData.alert_id,
+              machine_id: machineId || "",
+              process_id: alertData.process_id || "",
+              result_process_id: alertData.result_process_id || "",
+              process_number: alertData.processNumber || alertData.process_number || null,
+              item: alertData.item || null,
+              column_name: alertData.columnName || alertData.column_name || null,
+              alert_type: alertData.alert_type,
+              value: alertData.value,
+              nominal: alertData.nominal,
+              upper_limit: alertData.upper_limit,
+              lower_limit: alertData.lower_limit,
+              deviation: alertData.deviation,
+              measurement_index: alertData.measurement_index,
+              status: alertData.status || "pending",
+              severity: alertData.severity || null,
+              notes: alertData.notes || null,
+              created_at: message.timestamp || new Date().toISOString(),
+              acknowledged_at: null,
+              acknowledged_by: null,
+              resolved_at: null,
+              resolved_by: null,
+            };
             setRealtimeAlerts((prev) => [alert, ...prev]);
             onNewAlert?.(alert);
-          } else if (data.type === "ping") {
-            // Handle ping/keep-alive messages
-            console.log("🏓 Ping recibido del servidor");
+          } else if (message.alert_id) {
+            // Direct alert object format
+            const alert: Alert = {
+              ...message,
+              created_at: message.created_at || new Date().toISOString(),
+            };
+            setRealtimeAlerts((prev) => [alert, ...prev]);
+            onNewAlert?.(alert);
+          } else if (message.type === "ping" || message.type === "connection") {
+            // Handle ping/keep-alive and connection messages
+            console.log("🏓 Mensaje de sistema recibido:", message.type);
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
