@@ -214,3 +214,95 @@ export const addProcess = async (data: AddProcessData): Promise<any> => {
   }
   return response.json();
 };
+
+// ================== ALERTS API ==================
+
+export interface Alert {
+  alert_id: string;
+  machine_id: string;
+  process_id: string;
+  result_process_id: string;
+  process_number: string | null;
+  item: string | null;
+  column_name: string | null;
+  alert_type: string;
+  value: number;
+  nominal: number;
+  upper_limit: number;
+  lower_limit: number;
+  deviation: number;
+  measurement_index: number;
+  status: string | null;
+  severity: string | null;
+  notes: string | null;
+  created_at: string;
+  acknowledged_at: string | null;
+  acknowledged_by: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+}
+
+export interface AlertsResponse {
+  alerts: Alert[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export const fetchAlerts = async (
+  machineId?: string,
+  status?: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<AlertsResponse> => {
+  let url = `${API_BASE_URL}/spc/alerts?page=${page}&page_size=${pageSize}`;
+  
+  if (machineId) {
+    url += `&machine_id=${encodeURIComponent(machineId)}`;
+  }
+  if (status) {
+    url += `&status=${encodeURIComponent(status)}`;
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Error al obtener las alertas");
+  }
+  return response.json();
+};
+
+export const acknowledgeAlert = async (alertId: string, acknowledgedBy: string = "system"): Promise<Alert> => {
+  const response = await fetch(
+    `${API_BASE_URL}/spc/alerts/${alertId}/acknowledge?acknowledged_by=${encodeURIComponent(acknowledgedBy)}`,
+    {
+      method: "PATCH",
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Error al reconocer la alerta");
+  }
+  return response.json();
+};
+
+export const resolveAlert = async (alertId: string, resolvedBy: string = "system", notes?: string): Promise<Alert> => {
+  let url = `${API_BASE_URL}/spc/alerts/${alertId}/resolve?resolved_by=${encodeURIComponent(resolvedBy)}`;
+  if (notes) {
+    url += `&notes=${encodeURIComponent(notes)}`;
+  }
+  
+  const response = await fetch(url, {
+    method: "PATCH",
+  });
+  if (!response.ok) {
+    throw new Error("Error al resolver la alerta");
+  }
+  return response.json();
+};
+
+// WebSocket URL for real-time alerts
+export const getAlertsWebSocketUrl = (): string => {
+  // Convert HTTP URL to WebSocket URL
+  const wsUrl = API_BASE_URL.replace("https://", "wss://").replace("http://", "ws://");
+  return `${wsUrl}/spc/ws/alerts`;
+};

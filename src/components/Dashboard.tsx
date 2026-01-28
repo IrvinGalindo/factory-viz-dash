@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -26,6 +26,8 @@ import { CapabilityHistogramChart } from "@/components/charts/CapabilityHistogra
 import { SPCChart } from "@/components/charts/SPCChart";
 import { SChart } from "@/components/charts/SChart";
 import { NormalProbabilityPlot } from "@/components/charts/NormalProbabilityPlot";
+import { AlertsSection } from "@/components/AlertsSection";
+import { toast } from "sonner";
 import {
   AlertCircle,
   CheckCircle,
@@ -34,6 +36,7 @@ import {
   ChevronsUpDown,
   Check,
   CalendarIcon,
+  BellRing,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -42,6 +45,7 @@ import {
   fetchProcessNumbers,
   fetchSPCChartData,
   SPCApiResponse,
+  Alert,
 } from "@/services/spcApi";
 
 const Dashboard = () => {
@@ -63,6 +67,26 @@ const Dashboard = () => {
     to: new Date(),
   });
   const [dateOpen, setDateOpen] = useState(false);
+
+  // Handler for real-time alerts
+  const handleNewRealtimeAlert = useCallback((alert: Alert) => {
+    const alertTypeText = alert.alert_type === "out_of_spec" 
+      ? "Fuera de Especificación" 
+      : alert.alert_type === "out_of_control"
+      ? "Fuera de Control"
+      : alert.alert_type;
+    
+    toast.error(`🚨 Nueva Alerta: ${alertTypeText}`, {
+      description: `${alert.item || "Item"}: Valor ${alert.value?.toFixed(4)} fuera de límites [${alert.lower_limit?.toFixed(4)}, ${alert.upper_limit?.toFixed(4)}]`,
+      duration: 10000,
+      action: {
+        label: "Ver",
+        onClick: () => {
+          document.getElementById("alerts-section")?.scrollIntoView({ behavior: "smooth" });
+        },
+      },
+    });
+  }, []);
 
   // Fetch machines from API
   useEffect(() => {
@@ -475,6 +499,14 @@ const Dashboard = () => {
         {/* Solo mostrar charts si hay una máquina seleccionada */}
         {selectedMachineId && data && (
           <>
+            {/* Alerts Section */}
+            <div id="alerts-section">
+              <AlertsSection
+                machineId={selectedMachineId}
+                onNewRealtimeAlert={handleNewRealtimeAlert}
+              />
+            </div>
+
             {/* SPC Control Chart Section */}
             <Card>
               <CardHeader>
