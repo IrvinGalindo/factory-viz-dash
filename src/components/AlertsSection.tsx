@@ -172,16 +172,23 @@ export const AlertsSection = ({
     }
   };
 
-  const formatAlertType = (type: string) => {
-    switch (type) {
+  const formatAlertTitle = (alert: Alert) => {
+    const value = alert.value?.toFixed(4);
+    const machineName = alert.item || "Item";
+    
+    switch (alert.alert_type) {
+      case "below_lower_limit":
+        return `${machineName}: El valor ${value} debajo del límite inferior`;
+      case "above_upper_limit":
+        return `${machineName}: El valor ${value} supera el límite superior`;
       case "out_of_spec":
-        return "Fuera de Especificación";
+        return `${machineName}: El valor ${value} fuera de especificación`;
       case "out_of_control":
-        return "Fuera de Control";
+        return `${machineName}: El valor ${value} fuera de control`;
       case "trend":
-        return "Tendencia Detectada";
+        return `${machineName}: Tendencia detectada en valor ${value}`;
       default:
-        return type;
+        return `${machineName}: Alerta - ${alert.alert_type}`;
     }
   };
 
@@ -309,7 +316,7 @@ export const AlertsSection = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold">
-                            {formatAlertType(alert.alert_type)}
+                            {formatAlertTitle(alert)}
                           </span>
                           {getSeverityBadge(alert.severity)}
                           {getStatusBadge(alert.status)}
