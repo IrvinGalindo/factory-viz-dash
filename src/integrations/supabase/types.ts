@@ -14,6 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_id: string
+          alert_type: string
+          column_name: string | null
+          created_at: string
+          deviation: number
+          item: string | null
+          lower_limit: number
+          machine_id: string
+          measurement_index: number
+          nominal: number
+          notes: string | null
+          process_id: string
+          process_number: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          result_process_id: string
+          severity: string | null
+          status: string | null
+          upper_limit: number
+          value: number
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string
+          alert_type: string
+          column_name?: string | null
+          created_at?: string
+          deviation: number
+          item?: string | null
+          lower_limit: number
+          machine_id: string
+          measurement_index: number
+          nominal: number
+          notes?: string | null
+          process_id: string
+          process_number?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          result_process_id: string
+          severity?: string | null
+          status?: string | null
+          upper_limit: number
+          value: number
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string
+          alert_type?: string
+          column_name?: string | null
+          created_at?: string
+          deviation?: number
+          item?: string | null
+          lower_limit?: number
+          machine_id?: string
+          measurement_index?: number
+          nominal?: number
+          notes?: string | null
+          process_id?: string
+          process_number?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          result_process_id?: string
+          severity?: string | null
+          status?: string | null
+          upper_limit?: number
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["machine_id"]
+          },
+          {
+            foreignKeyName: "alerts_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "processes"
+            referencedColumns: ["process_id"]
+          },
+          {
+            foreignKeyName: "alerts_result_process_id_fkey"
+            columns: ["result_process_id"]
+            isOneToOne: false
+            referencedRelation: "result_process"
+            referencedColumns: ["result_process_id"]
+          },
+        ]
+      }
       machines: {
         Row: {
           cmm_name: string | null
