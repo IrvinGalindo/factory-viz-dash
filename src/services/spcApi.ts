@@ -272,13 +272,15 @@ export const fetchAlerts = async (
   return response.json();
 };
 
-export const acknowledgeAlert = async (alertId: string, acknowledgedBy: string = "system"): Promise<Alert> => {
-  const response = await fetch(
-    `${API_BASE_URL}/spc/alerts/${alertId}/acknowledge?acknowledged_by=${encodeURIComponent(acknowledgedBy)}`,
-    {
-      method: "PATCH",
-    }
-  );
+export const acknowledgeAlert = async (alertId: string, acknowledgedBy: string = "system", notes?: string): Promise<Alert> => {
+  let url = `${API_BASE_URL}/spc/alerts/${alertId}/acknowledge?acknowledged_by=${encodeURIComponent(acknowledgedBy)}`;
+  if (notes) {
+    url += `&notes=${encodeURIComponent(notes)}`;
+  }
+  
+  const response = await fetch(url, {
+    method: "PATCH",
+  });
   if (!response.ok) {
     throw new Error("Error al reconocer la alerta");
   }

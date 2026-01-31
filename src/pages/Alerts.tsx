@@ -201,14 +201,20 @@ const AlertsPage = () => {
   });
 
   const handleAcknowledge = async (alertId: string) => {
+    const comment = alertComments[alertId];
+    if (!comment || comment.trim() === "") {
+      toast.error("Debes agregar un comentario antes de reconocer la alerta");
+      return;
+    }
+    
     setProcessingAlertId(alertId);
-    const comment = alertComments[alertId] || "";
     
     try {
       // Find the alert to send via WebSocket
       const alertToAcknowledge = alerts.find(a => a.alert_id === alertId);
       
-      await acknowledgeAlert(alertId, "operator");
+      // Send to API with the notes/comment
+      await acknowledgeAlert(alertId, "operator", comment);
       
       // Send via WebSocket with the comment
       if (alertToAcknowledge) {
@@ -563,38 +569,36 @@ const AlertsPage = () => {
                         </TableCell>
                         <TableCell>
                           {alert.status !== "resolved" && (
-                            <div className="space-y-2 min-w-[200px]">
+                            <div className="flex items-center gap-2 min-w-[350px]">
                               {alert.status !== "acknowledged" && (
-                                <Textarea
-                                  placeholder="Agregar comentario..."
-                                  value={alertComments[alert.alert_id] || ""}
-                                  onChange={(e) => handleCommentChange(alert.alert_id, e.target.value)}
-                                  className="min-h-[60px] text-xs"
-                                />
-                              )}
-                              <div className="flex justify-end gap-2">
-                                {alert.status !== "acknowledged" && (
+                                <>
+                                  <Textarea
+                                    placeholder="Agregar comentario (requerido)..."
+                                    value={alertComments[alert.alert_id] || ""}
+                                    onChange={(e) => handleCommentChange(alert.alert_id, e.target.value)}
+                                    className="min-h-[40px] max-h-[60px] text-xs flex-1"
+                                  />
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleAcknowledge(alert.alert_id)}
-                                    disabled={processingAlertId === alert.alert_id}
+                                    disabled={processingAlertId === alert.alert_id || !alertComments[alert.alert_id]?.trim()}
                                   >
                                     <Check className="h-3 w-3 mr-1" />
                                     Reconocer
                                   </Button>
-                                )}
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => handleResolve(alert.alert_id)}
-                                  disabled={processingAlertId === alert.alert_id}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Resolver
-                                </Button>
-                              </div>
+                                </>
+                              )}
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleResolve(alert.alert_id)}
+                                disabled={processingAlertId === alert.alert_id}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Resolver
+                              </Button>
                             </div>
                           )}
                         </TableCell>
