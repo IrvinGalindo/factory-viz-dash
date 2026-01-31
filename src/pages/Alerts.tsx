@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -52,14 +53,18 @@ import {
   acknowledgeAlert,
   resolveAlert,
   Alert,
+  getAlertsWebSocketUrl,
 } from "@/services/spcApi";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const AlertsPage = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [machines, setMachines] = useState<Array<{ machine_id: string; line: string; cmm_name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [processingAlertId, setProcessingAlertId] = useState<string | null>(null);
+  const [alertComments, setAlertComments] = useState<Record<string, string>>({});
+  const wsRef = useRef<WebSocket | null>(null);
 
   // Filters
   const [selectedMachineId, setSelectedMachineId] = useState<string>("all");
@@ -70,6 +75,73 @@ const AlertsPage = () => {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [dateOpen, setDateOpen] = useState(false);
+
+  // WebSocket connection for sending acknowledgments with comments
+  useEffect(() => {
+    const connectWebSocket = () => {
+      const wsUrl = getAlertsWebSocketUrl();
+      console.log("🔌 Conectando WebSocket para enviar comentarios:", wsUrl);
+      
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        console.log("✅ WebSocket conectado para envío de comentarios");
+      };
+      
+      ws.onerror = (error) => {
+        console.error("❌ Error en WebSocket:", error);
+      };
+      
+      ws.onclose = () => {
+        console.log("🔌 WebSocket desconectado, reconectando en 5s...");
+        setTimeout(connectWebSocket, 5000);
+      };
+      
+      wsRef.current = ws;
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
+
+  const sendAlertAcknowledgmentViaWebSocket = (alert: Alert, comment: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const message = {
+        type: "alert_acknowledgment",
+        timestamp: new Date().toISOString(),
+        data: {
+          alert_id: alert.alert_id,
+          machine_id: alert.machine_id,
+          process_id: alert.process_id,
+          result_process_id: alert.result_process_id,
+          process_number: alert.process_number,
+          item: alert.item,
+          column_name: alert.column_name,
+          alert_type: alert.alert_type,
+          value: alert.value,
+          nominal: alert.nominal,
+          upper_limit: alert.upper_limit,
+          lower_limit: alert.lower_limit,
+          deviation: alert.deviation,
+          comment: comment,
+          acknowledged_by: "operator",
+          acknowledged_at: new Date().toISOString(),
+        },
+      };
+      
+      wsRef.current.send(JSON.stringify(message));
+      console.log("📤 Enviado reconocimiento por WebSocket:", message);
+      toast.success("Comentario enviado correctamente");
+    } else {
+      console.warn("⚠️ WebSocket no conectado, no se pudo enviar el comentario");
+      toast.warning("WebSocket no conectado, el comentario se guardó localmente");
+    }
+  };
 
   // Load machines
   useEffect(() => {
@@ -130,20 +202,45 @@ const AlertsPage = () => {
 
   const handleAcknowledge = async (alertId: string) => {
     setProcessingAlertId(alertId);
+    const comment = alertComments[alertId] || "";
+    
     try {
+      // Find the alert to send via WebSocket
+      const alertToAcknowledge = alerts.find(a => a.alert_id === alertId);
+      
       await acknowledgeAlert(alertId, "operator");
+      
+      // Send via WebSocket with the comment
+      if (alertToAcknowledge) {
+        sendAlertAcknowledgmentViaWebSocket(alertToAcknowledge, comment);
+      }
+      
       setAlerts((prev) =>
         prev.map((a) =>
           a.alert_id === alertId
-            ? { ...a, status: "acknowledged", acknowledged_at: new Date().toISOString() }
+            ? { ...a, status: "acknowledged", acknowledged_at: new Date().toISOString(), notes: comment }
             : a
         )
       );
+      
+      // Clear the comment after acknowledging
+      setAlertComments((prev) => {
+        const updated = { ...prev };
+        delete updated[alertId];
+        return updated;
+      });
     } catch (err) {
       console.error("Error acknowledging alert:", err);
     } finally {
       setProcessingAlertId(null);
     }
+  };
+
+  const handleCommentChange = (alertId: string, comment: string) => {
+    setAlertComments((prev) => ({
+      ...prev,
+      [alertId]: comment,
+    }));
   };
 
   const handleResolve = async (alertId: string) => {
@@ -435,7 +532,7 @@ const AlertsPage = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredAlerts.map((alert) => (
-                      <TableRow key={alert.alert_id}>
+                      <TableRow key={alert.alert_id} className="align-top">
                         <TableCell>
                           <div className="space-y-1">
                             <p className="font-medium text-sm">
@@ -447,6 +544,11 @@ const AlertsPage = () => {
                             <p className="text-xs text-muted-foreground">
                               Nominal: {alert.nominal?.toFixed(4)} | Límites: [{alert.lower_limit?.toFixed(4)}, {alert.upper_limit?.toFixed(4)}]
                             </p>
+                            {alert.notes && (
+                              <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded">
+                                💬 {alert.notes}
+                              </p>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -459,30 +561,40 @@ const AlertsPage = () => {
                             {format(new Date(alert.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>
                           {alert.status !== "resolved" && (
-                            <div className="flex justify-end gap-2">
+                            <div className="space-y-2 min-w-[200px]">
                               {alert.status !== "acknowledged" && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleAcknowledge(alert.alert_id)}
-                                  disabled={processingAlertId === alert.alert_id}
-                                >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  Reconocer
-                                </Button>
+                                <Textarea
+                                  placeholder="Agregar comentario..."
+                                  value={alertComments[alert.alert_id] || ""}
+                                  onChange={(e) => handleCommentChange(alert.alert_id, e.target.value)}
+                                  className="min-h-[60px] text-xs"
+                                />
                               )}
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handleResolve(alert.alert_id)}
-                                disabled={processingAlertId === alert.alert_id}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Resolver
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                {alert.status !== "acknowledged" && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAcknowledge(alert.alert_id)}
+                                    disabled={processingAlertId === alert.alert_id}
+                                  >
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Reconocer
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleResolve(alert.alert_id)}
+                                  disabled={processingAlertId === alert.alert_id}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Resolver
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </TableCell>

@@ -186,6 +186,7 @@ export type Database = {
         Row: {
           active: boolean | null
           created_at: string | null
+          email: string | null
           emp_id: string | null
           id: string
           inspector_name: string
@@ -196,6 +197,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           created_at?: string | null
+          email?: string | null
           emp_id?: string | null
           id?: string
           inspector_name: string
@@ -206,6 +208,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           created_at?: string | null
+          email?: string | null
           emp_id?: string | null
           id?: string
           inspector_name?: string
