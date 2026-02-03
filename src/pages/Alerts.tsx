@@ -53,10 +53,10 @@ import {
   acknowledgeAlert,
   resolveAlert,
   Alert,
-  getAlertsWebSocketUrl,
 } from "@/services/spcApi";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useGlobalAlertsContext } from "@/hooks/useGlobalAlerts";
 
 const AlertsPage = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -64,7 +64,9 @@ const AlertsPage = () => {
   const [loading, setLoading] = useState(true);
   const [processingAlertId, setProcessingAlertId] = useState<string | null>(null);
   const [alertComments, setAlertComments] = useState<Record<string, string>>({});
-  const wsRef = useRef<WebSocket | null>(null);
+  
+  // Use global WebSocket connection
+  const { sendMessage } = useGlobalAlertsContext();
 
   // Filters
   const [selectedMachineId, setSelectedMachineId] = useState<string>("all");
@@ -76,71 +78,32 @@ const AlertsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateOpen, setDateOpen] = useState(false);
 
-  // WebSocket connection for sending acknowledgments with comments
-  useEffect(() => {
-    const connectWebSocket = () => {
-      const wsUrl = getAlertsWebSocketUrl();
-      console.log("🔌 Conectando WebSocket para enviar comentarios:", wsUrl);
-      
-      const ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        console.log("✅ WebSocket conectado para envío de comentarios");
-      };
-      
-      ws.onerror = (error) => {
-        console.error("❌ Error en WebSocket:", error);
-      };
-      
-      ws.onclose = () => {
-        console.log("🔌 WebSocket desconectado, reconectando en 5s...");
-        setTimeout(connectWebSocket, 5000);
-      };
-      
-      wsRef.current = ws;
-    };
-    
-    connectWebSocket();
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
-
   const sendAlertAcknowledgmentViaWebSocket = (alert: Alert, comment: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      const message = {
-        type: "alert_acknowledgment",
-        timestamp: new Date().toISOString(),
-        data: {
-          alert_id: alert.alert_id,
-          machine_id: alert.machine_id,
-          process_id: alert.process_id,
-          result_process_id: alert.result_process_id,
-          process_number: alert.process_number,
-          item: alert.item,
-          column_name: alert.column_name,
-          alert_type: alert.alert_type,
-          value: alert.value,
-          nominal: alert.nominal,
-          upper_limit: alert.upper_limit,
-          lower_limit: alert.lower_limit,
-          deviation: alert.deviation,
-          comment: comment,
-          acknowledged_by: "operator",
-          acknowledged_at: new Date().toISOString(),
-        },
-      };
-      
-      wsRef.current.send(JSON.stringify(message));
-      console.log("📤 Enviado reconocimiento por WebSocket:", message);
-      toast.success("Comentario enviado correctamente");
-    } else {
-      console.warn("⚠️ WebSocket no conectado, no se pudo enviar el comentario");
-      toast.warning("WebSocket no conectado, el comentario se guardó localmente");
-    }
+    const message = {
+      type: "alert_acknowledgment",
+      timestamp: new Date().toISOString(),
+      data: {
+        alert_id: alert.alert_id,
+        machine_id: alert.machine_id,
+        process_id: alert.process_id,
+        result_process_id: alert.result_process_id,
+        process_number: alert.process_number,
+        item: alert.item,
+        column_name: alert.column_name,
+        alert_type: alert.alert_type,
+        value: alert.value,
+        nominal: alert.nominal,
+        upper_limit: alert.upper_limit,
+        lower_limit: alert.lower_limit,
+        deviation: alert.deviation,
+        comment: comment,
+        acknowledged_by: "operator",
+        acknowledged_at: new Date().toISOString(),
+      },
+    };
+    
+    sendMessage(message);
+    toast.success("Comentario enviado correctamente");
   };
 
   // Load machines
