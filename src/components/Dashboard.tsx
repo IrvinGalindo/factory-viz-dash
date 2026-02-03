@@ -26,9 +26,6 @@ import { CapabilityHistogramChart } from "@/components/charts/CapabilityHistogra
 import { SPCChart } from "@/components/charts/SPCChart";
 import { SChart } from "@/components/charts/SChart";
 import { NormalProbabilityPlot } from "@/components/charts/NormalProbabilityPlot";
-import { AlertsSection } from "@/components/AlertsSection";
-import { useAlertSound } from "@/hooks/useAlertSound";
-import { toast } from "sonner";
 import {
   AlertCircle,
   CheckCircle,
@@ -37,7 +34,6 @@ import {
   ChevronsUpDown,
   Check,
   CalendarIcon,
-  BellRing,
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -46,7 +42,6 @@ import {
   fetchProcessNumbers,
   fetchSPCChartData,
   SPCApiResponse,
-  Alert,
 } from "@/services/spcApi";
 
 const Dashboard = () => {
@@ -69,36 +64,6 @@ const Dashboard = () => {
   });
   const [dateOpen, setDateOpen] = useState(false);
 
-  // Alert sound hook
-  const { playAlertSound } = useAlertSound();
-  // Handler for real-time alerts
-  const handleNewRealtimeAlert = useCallback((alert: Alert) => {
-    // Play alert sound
-    playAlertSound(alert.severity);
-    
-    // Format alert message
-    const value = alert.value?.toFixed(4);
-    const alertTypeText = alert.alert_type === "below_lower_limit"
-      ? `El valor ${value} debajo del límite inferior`
-      : alert.alert_type === "above_upper_limit"
-      ? `El valor ${value} supera el límite superior`
-      : alert.alert_type === "out_of_spec" 
-      ? `El valor ${value} fuera de especificación` 
-      : alert.alert_type === "out_of_control"
-      ? `El valor ${value} fuera de control`
-      : `Alerta: ${alert.alert_type}`;
-    
-    toast.error(`🚨 ${alert.item || "Item"}: ${alertTypeText}`, {
-      description: `Límites: [${alert.lower_limit?.toFixed(4)}, ${alert.upper_limit?.toFixed(4)}] | Desviación: ${alert.deviation?.toFixed(4)}`,
-      duration: 10000,
-      action: {
-        label: "Ver",
-        onClick: () => {
-          document.getElementById("alerts-section")?.scrollIntoView({ behavior: "smooth" });
-        },
-      },
-    });
-  }, [playAlertSound]);
 
   // Fetch machines from API
   useEffect(() => {
@@ -511,13 +476,6 @@ const Dashboard = () => {
         {/* Solo mostrar charts si hay una máquina seleccionada */}
         {selectedMachineId && data && (
           <>
-            {/* Alerts Section */}
-            <div id="alerts-section">
-              <AlertsSection
-                machineId={selectedMachineId}
-                onNewRealtimeAlert={handleNewRealtimeAlert}
-              />
-            </div>
 
             {/* SPC Control Chart Section */}
             <Card>
