@@ -57,11 +57,9 @@ const AlertsPage = () => {
   const {
     processingAlertId,
     alertComments,
-    resolveNotes,
     handleAcknowledge,
     handleResolve,
     handleCommentChange,
-    handleResolveNoteChange,
   } = useAlertsActions(alerts, setAlerts);
 
   const stats = useAlertsStats(filteredAlerts);
@@ -204,9 +202,7 @@ const AlertsPage = () => {
                   machines={machines}
                   processingAlertId={processingAlertId}
                   alertComments={alertComments}
-                  resolveNotes={resolveNotes}
                   onCommentChange={handleCommentChange}
-                  onResolveNoteChange={handleResolveNoteChange}
                   onAcknowledge={handleAcknowledge}
                   onResolve={handleResolve}
                 />

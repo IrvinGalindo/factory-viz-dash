@@ -1,11 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RefreshCw, CheckCircle } from "lucide-react";
@@ -23,13 +17,11 @@ import { AlertsPagination } from "@/components/alerts/AlertsPagination";
 const AlertsPage = () => {
   // State management
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [machines, setMachines] = useState<
-    Array<{ machine_id: string; line: string; cmm_name: string }>
-  >([]);
+  const [machines, setMachines] = useState<Array<{ machine_id: string; line: string; cmm_name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [dateOpen, setDateOpen] = useState(false);
 
-  // Custom hooks for filtering, pagination, actions and stats
+  // Custom hooks
   const {
     filteredAlerts,
     selectedMachineId,
@@ -57,22 +49,20 @@ const AlertsPage = () => {
   const {
     processingAlertId,
     alertComments,
-    resolveNotes,
     handleAcknowledge,
     handleResolve,
     handleCommentChange,
-    handleResolveNoteChange,
   } = useAlertsActions(alerts, setAlerts);
 
   const stats = useAlertsStats(filteredAlerts);
 
-  // Compute paginated alerts
+  // Pagination
   const paginatedAlerts = filteredAlerts.slice(
     paginationInfo.startIndex,
     paginationInfo.endIndex
   );
 
-  // Load machines on mount
+  // Data fetching
   useEffect(() => {
     const loadMachines = async () => {
       try {
@@ -85,18 +75,14 @@ const AlertsPage = () => {
     loadMachines();
   }, []);
 
-  // Load alerts based on filters
   const loadAlerts = useCallback(async () => {
     setLoading(true);
     try {
-      const machineId =
-        selectedMachineId === "all" ? undefined : selectedMachineId;
+      const machineId = selectedMachineId === "all" ? undefined : selectedMachineId;
       const status = selectedStatus === "all" ? undefined : selectedStatus;
       const response = await fetchAlerts(machineId, status, 1, 100);
 
-      const alertsData = Array.isArray(response)
-        ? response
-        : response.alerts || [];
+      const alertsData = Array.isArray(response) ? response : response.alerts || [];
       setAlerts(alertsData);
     } catch (err) {
       console.error("Error loading alerts:", err);
@@ -110,7 +96,7 @@ const AlertsPage = () => {
     loadAlerts();
   }, [loadAlerts]);
 
-  // Handle clearing filters and resetting pagination
+  // Handle filter changes
   const handleClearFilters = useCallback(() => {
     clearFilters();
     resetPage();
@@ -122,22 +108,18 @@ const AlertsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Gestión de Alertas
-            </h1>
+            <h1 className="text-3xl font-bold tracking-tight">Gestión de Alertas</h1>
             <p className="text-muted-foreground">
               Historial completo de alertas del sistema
             </p>
           </div>
           <Button onClick={loadAlerts} disabled={loading}>
-            <RefreshCw
-              className={cn("h-4 w-4 mr-2", loading && "animate-spin")}
-            />
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             Actualizar
           </Button>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <AlertsStats
           total={stats.total}
           pending={stats.pending}
@@ -204,9 +186,7 @@ const AlertsPage = () => {
                   machines={machines}
                   processingAlertId={processingAlertId}
                   alertComments={alertComments}
-                  resolveNotes={resolveNotes}
                   onCommentChange={handleCommentChange}
-                  onResolveNoteChange={handleResolveNoteChange}
                   onAcknowledge={handleAcknowledge}
                   onResolve={handleResolve}
                 />

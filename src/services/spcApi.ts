@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://spc-backend-lmgg.onrender.com/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
 
 export interface Machine {
   machine_id: string;
@@ -272,35 +272,66 @@ export const fetchAlerts = async (
   return response.json();
 };
 
-export const acknowledgeAlert = async (alertId: string, acknowledgedBy: string = "system", notes?: string): Promise<Alert> => {
-  let url = `${API_BASE_URL}/spc/alerts/${alertId}/acknowledge?acknowledged_by=${encodeURIComponent(acknowledgedBy)}`;
-  if (notes) {
-    url += `&notes=${encodeURIComponent(notes)}`;
+export const acknowledgeAlert = async (
+  alertId: string,
+  acknowledgedBy: string = "system",
+  notes?: string
+): Promise<Alert> => {
+  // 🔧 Enviar como 'acknowledged_notes' porque así lo espera el backend
+  let url = `${API_BASE_URL}/spc/alerts/${alertId}/acknowledge?acknowledged_by=${encodeURIComponent(acknowledgedBy || "system")}`;
+  
+  if (notes && notes.trim()) {
+    // El backend usa 'acknowledged_notes', no 'notes'
+    url += `&acknowledged_notes=${encodeURIComponent(notes)}`;
   }
+  
+  console.log("🚀 Acknowledge URL:", url);
   
   const response = await fetch(url, {
     method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
+  
   if (!response.ok) {
-    throw new Error("Error al reconocer la alerta");
+    const errorText = await response.text();
+    console.error("❌ Error response:", errorText);
+    throw new Error(`Error al reconocer la alerta: ${response.status}`);
   }
   return response.json();
 };
 
-export const resolveAlert = async (alertId: string, resolvedBy: string = "system", notes?: string): Promise<Alert> => {
-  let url = `${API_BASE_URL}/spc/alerts/${alertId}/resolve?resolved_by=${encodeURIComponent(resolvedBy)}`;
-  if (notes) {
-    url += `&notes=${encodeURIComponent(notes)}`;
+export const resolveAlert = async (
+  alertId: string,
+  resolvedBy: string = "system",
+  resolvedNotes?: string
+): Promise<Alert> => {
+  // 🔧 Enviar como 'resolved_notes' porque así lo espera el backend
+  let url = `${API_BASE_URL}/spc/alerts/${alertId}/resolve?resolved_by=${encodeURIComponent(resolvedBy || "system")}`;
+  
+  if (resolvedNotes && resolvedNotes.trim()) {
+    // El backend usa 'resolved_notes', mantener como está
+    url += `&resolved_notes=${encodeURIComponent(resolvedNotes)}`;
   }
+  
+  console.log("🚀 Resolve URL:", url);
   
   const response = await fetch(url, {
     method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
+  
   if (!response.ok) {
-    throw new Error("Error al resolver la alerta");
+    const errorText = await response.text();
+    console.error("❌ Error response:", errorText);
+    throw new Error(`Error al resolver la alerta: ${response.status}`);
   }
   return response.json();
 };
+
 
 // WebSocket URL for real-time alerts
 export const getAlertsWebSocketUrl = (): string => {
@@ -308,3 +339,53 @@ export const getAlertsWebSocketUrl = (): string => {
   const wsUrl = API_BASE_URL.replace("https://", "wss://").replace("http://", "ws://");
   return `${wsUrl}/spc/ws/alerts`;
 };
+
+// Standard for acknowledged alert
+export interface AcknowledgedAlert {
+  type: 'alert_update';
+  data: {
+    event: 'alert_updated';
+    change_type: 'acknowledged';
+    acknowledgement: {
+      old_acknowledged_by: string | null;
+      new_acknowledged_by: string;
+      acknowledged_at: string;
+    };
+    notes?: {
+      old_notes: string | null;
+      new_notes: string;
+    };
+  };
+}
+
+// Standard for resolved alert
+export interface ResolvedAlert {
+  type: 'alert_update';
+  data: {
+    event: 'alert_updated';
+    change_type: 'resolved';
+    resolution: {
+      old_resolved_by: string | null;
+      new_resolved_by: string;
+      resolved_at: string;
+    };
+    notes?: {
+      old_notes: string | null;
+      new_notes: string;
+    };
+  };
+}
+
+// Standard for updated notes
+export interface NotesUpdatedAlert {
+  type: 'alert_update';
+  data: {
+    event: 'alert_updated';
+    change_type: 'notes_updated';
+    notes: {
+      old_notes: string | null;
+      new_notes: string;
+      updated_by: string;
+    };
+  };
+}

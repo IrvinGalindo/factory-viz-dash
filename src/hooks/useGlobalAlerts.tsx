@@ -9,9 +9,9 @@ interface GlobalAlertsContextType {
   sendMessage: (message: object) => void;
 }
 
-const GlobalAlertsContext = createContext<GlobalAlertsContextType | null>(null);
+const GlobalAlertsContext = createContext<GlobalAlertsContextType | undefined>(undefined) as React.Context<GlobalAlertsContextType | undefined>;
 
-export const useGlobalAlertsContext = () => {
+export const useGlobalAlertsContext = (): GlobalAlertsContextType => {
   const context = useContext(GlobalAlertsContext);
   if (!context) {
     throw new Error("useGlobalAlertsContext must be used within GlobalAlertsProvider");
@@ -32,12 +32,24 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
   const processedAlertsRef = useRef<Set<string>>(new Set());
 
   const handleNewRealtimeAlert = useCallback((alert: Alert) => {
+    // Evitar pop-ups para alertas modificadas (reconocidas, resueltas o actualizadas)
+    console.log("Alerta recibida:", alert);
+    console.log("Tipo de Alerta:", alert.alert_type);
+    if (
+      alert.alert_type === "alert_acknowledgment" ||
+      alert.alert_type === "alert_resolved" ||
+      alert.alert_type === "alert_updated"
+    ) {
+      console.log("Alerta modificada ignorada:", alert);
+      return;
+    }
+
     // Deduplicate alerts by alert_id
     if (processedAlertsRef.current.has(alert.alert_id)) {
       return;
     }
     processedAlertsRef.current.add(alert.alert_id);
-    
+
     // Clean old alerts after 1 minute to prevent memory leak
     setTimeout(() => {
       processedAlertsRef.current.delete(alert.alert_id);
@@ -45,21 +57,36 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
 
     // Play alert sound
     playAlertSound(alert.severity);
-    
+
     // Format alert message
     const value = alert.value?.toFixed(4);
-    const alertTypeText = alert.alert_type === "below_lower_limit"
-      ? `El valor ${value} debajo del límite inferior`
-      : alert.alert_type === "above_upper_limit"
-      ? `El valor ${value} supera el límite superior`
-      : alert.alert_type === "out_of_spec" 
-      ? `El valor ${value} fuera de especificación` 
-      : alert.alert_type === "out_of_control"
-      ? `El valor ${value} fuera de control`
-      : `Alerta: ${alert.alert_type}`;
+    const nominal = alert.nominal?.toFixed(4);
+    const deviation = Math.abs(alert.deviation || 0).toFixed(4);
     
-    toast.error(`🚨 ${alert.item || "Item"}: ${alertTypeText}`, {
-      description: `Límites: [${alert.lower_limit?.toFixed(4)}, ${alert.upper_limit?.toFixed(4)}] | Desviación: ${alert.deviation?.toFixed(4)}`,
+    let alertTypeText = "";
+    if (alert.alert_type === "below_lower_limit") {
+      alertTypeText = `Debajo del límite inferior`;
+    } else if (alert.alert_type === "above_upper_limit") {
+      alertTypeText = `Supera el límite superior`;
+    } else if (alert.alert_type === "out_of_spec") {
+      alertTypeText = `Fuera de especificación`;
+    } else if (alert.alert_type === "out_of_control") {
+      alertTypeText = `Fuera de control`;
+    } else {
+      alertTypeText = `Alerta`;
+    }
+
+    // Construir título con el formato solicitado
+    const itemDisplay = alert.item || alert.column_name || "Sistema";
+    const processInfo = alert.process_number ? `Proceso ${alert.process_number}` : "Sin proceso";
+    const title = `🚨 Alerta: ${processInfo} - ${itemDisplay} - ${alertTypeText}`;
+    
+    // Descripción más detallada
+    const description = `Valor: ${value} | Nominal: ${nominal} | Desviación: ${deviation} | Límites: [${alert.lower_limit?.toFixed(4)}, ${alert.upper_limit?.toFixed(4)}]`;
+    
+    console.log("✅ Mostrando toast para alerta válida:", { type: alert.alert_type, title, description });
+    toast.error(title, {
+      description: description,
       duration: 10000,
       action: {
         label: "Ver Alertas",
@@ -89,18 +116,38 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          console.log("Mensaje WebSocket recibido:", message);
           
+          const allowedTypes = ["alert", "connection", "pong"];
+          if (!allowedTypes.includes(message.type)) {
+            console.warn("Mensaje WebSocket ignorado: Tipo no permitido", message.type);
+            return;
+          }
+
           if (message.type === "alert" && message.data) {
             const alertData = message.data;
+            
+            // Deducir el tipo de alerta basándose en el valor y los límites
+            let deducedAlertType = alertData.event || "unknown";
+            if (!alertData.event) {
+              if (alertData.value < alertData.lower_limit) {
+                deducedAlertType = "below_lower_limit";
+              } else if (alertData.value > alertData.upper_limit) {
+                deducedAlertType = "above_upper_limit";
+              } else {
+                deducedAlertType = "out_of_spec";
+              }
+            }
+            
             const alert: Alert = {
               alert_id: alertData.alert_id,
-              machine_id: "",
+              machine_id: alertData.machine_id || "",
               process_id: alertData.process_id || "",
               result_process_id: alertData.result_process_id || "",
               process_number: alertData.processNumber || alertData.process_number || null,
               item: alertData.item || null,
               column_name: alertData.columnName || alertData.column_name || null,
-              alert_type: alertData.alert_type,
+              alert_type: deducedAlertType,
               value: alertData.value,
               nominal: alertData.nominal,
               upper_limit: alertData.upper_limit,
@@ -117,10 +164,10 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
               resolved_by: null,
             };
             handleNewRealtimeAlert(alert);
-          } else if (message.alert_id) {
-            handleNewRealtimeAlert(message as Alert);
-          } else if (message.type === "ping" || message.type === "connection") {
-            console.log("🏓 [Global] Mensaje de sistema:", message.type);
+          } else if (message.type === "connection") {
+            console.log("Conexión establecida: ", message);
+          } else if (message.type === "pong") {
+            console.log("Pong recibido: ", message);
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -172,9 +219,23 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
     };
   }, [connect]);
 
+  const contextValue: GlobalAlertsContextType = {
+    isConnected,
+    connectionError,
+    sendMessage,
+  };
+
   return (
-    <GlobalAlertsContext.Provider value={{ isConnected, connectionError, sendMessage }}>
+    <GlobalAlertsContext.Provider
+      value={{
+        isConnected: isConnected,
+        connectionError: connectionError,
+        sendMessage: sendMessage,
+      }}
+    >
       {children}
     </GlobalAlertsContext.Provider>
   );
 };
+
+export { GlobalAlertsContext };
