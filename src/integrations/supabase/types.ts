@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           acknowledged_at: string | null
           acknowledged_by: string | null
+          acknowledged_notes: string | null
           alert_id: string
           alert_type: string
           column_name: string | null
@@ -28,11 +29,11 @@ export type Database = {
           machine_id: string
           measurement_index: number
           nominal: number
-          notes: string | null
           process_id: string
           process_number: string | null
           resolved_at: string | null
           resolved_by: string | null
+          resolved_notes: string | null
           result_process_id: string
           severity: string | null
           status: string | null
@@ -42,6 +43,7 @@ export type Database = {
         Insert: {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
+          acknowledged_notes?: string | null
           alert_id?: string
           alert_type: string
           column_name?: string | null
@@ -52,11 +54,11 @@ export type Database = {
           machine_id: string
           measurement_index: number
           nominal: number
-          notes?: string | null
           process_id: string
           process_number?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_notes?: string | null
           result_process_id: string
           severity?: string | null
           status?: string | null
@@ -66,6 +68,7 @@ export type Database = {
         Update: {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
+          acknowledged_notes?: string | null
           alert_id?: string
           alert_type?: string
           column_name?: string | null
@@ -76,11 +79,11 @@ export type Database = {
           machine_id?: string
           measurement_index?: number
           nominal?: number
-          notes?: string | null
           process_id?: string
           process_number?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_notes?: string | null
           result_process_id?: string
           severity?: string | null
           status?: string | null
