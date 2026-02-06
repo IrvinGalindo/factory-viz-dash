@@ -7,103 +7,215 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, User } from 'lucide-react';
+import { Plus, Edit, Trash2, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, AppRole } from '@/hooks/useAuth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-interface User {
+interface ProfileWithRole {
   id: string;
-  name: string;
-  employeeNumber: string;
-  phone: string;
-  email: string;
-  role: 'Admin' | 'View';
-  createdAt: string;
+  inspector_name: string;
+  emp_id: string | null;
+  phone: string | null;
+  email: string | null;
+  role: string;
+  active: boolean | null;
+  created_at: string | null;
+  app_role?: string;
 }
 
 const Users = () => {
   const { toast } = useToast();
+  const { canEdit } = useAuth();
+  const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      name: 'Juan Pérez',
-      employeeNumber: 'EMP001',
-      phone: '+52 555 1234567',
-      email: 'juan.perez@empresa.com',
-      role: 'Admin',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'María González',
-      employeeNumber: 'EMP002',
-      phone: '+52 555 2345678',
-      email: 'maria.gonzalez@empresa.com',
-      role: 'View',
-      createdAt: '2024-01-20'
-    },
-    {
-      id: '3',
-      name: 'Carlos Rodríguez',
-      employeeNumber: 'EMP003',
-      phone: '+52 555 3456789',
-      email: 'carlos.rodriguez@empresa.com',
-      role: 'View',
-      createdAt: '2024-02-01'
-    }
-  ]);
+  const [editingUser, setEditingUser] = useState<ProfileWithRole | null>(null);
+  const isAdmin = canEdit('users');
 
   const [formData, setFormData] = useState({
-    name: '',
-    employeeNumber: '',
+    inspector_name: '',
+    emp_id: '',
     phone: '',
     email: '',
-    role: 'View' as 'Admin' | 'View'
+    role: 'inspector' as string,
+    password: '',
+  });
+
+  // Fetch profiles with roles
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['profiles-with-roles'],
+    queryFn: async () => {
+      const { data: profiles, error } = await supabase
+        .from('profile')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      const rolesMap = new Map(roles?.map(r => [r.user_id, r.role]) ?? []);
+
+      return (profiles ?? []).map(p => ({
+        ...p,
+        app_role: rolesMap.get(p.id) ?? p.role,
+      })) as ProfileWithRole[];
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({ inspector_name: '', emp_id: '', phone: '', email: '', role: 'inspector', password: '' });
+    setEditingUser(null);
+  };
+
+  // Create user mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      // Create auth user first
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (authError) throw authError;
+
+      // Create profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profile')
+        .insert({
+          inspector_name: data.inspector_name,
+          emp_id: data.emp_id || null,
+          phone: data.phone || null,
+          email: data.email,
+          role: data.role,
+        })
+        .select()
+        .single();
+      if (profileError) throw profileError;
+
+      // Assign role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: profile.id,
+          role: data.role as AppRole,
+        });
+      if (roleError) throw roleError;
+
+      return profile;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });
+      setIsCreateDialogOpen(false);
+      resetForm();
+      toast({ title: 'Usuario creado', description: 'El usuario se ha creado exitosamente' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Update user mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
+      const { error: profileError } = await supabase
+        .from('profile')
+        .update({
+          inspector_name: data.inspector_name,
+          emp_id: data.emp_id || null,
+          phone: data.phone || null,
+          email: data.email,
+          role: data.role,
+        })
+        .eq('id', id);
+      if (profileError) throw profileError;
+
+      // Update role
+      const { error: deleteRoleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', id);
+      if (deleteRoleError) throw deleteRoleError;
+
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: id, role: data.role as AppRole });
+      if (roleError) throw roleError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });
+      setEditingUser(null);
+      resetForm();
+      toast({ title: 'Usuario actualizado', description: 'Los cambios se guardaron exitosamente' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  // Delete user mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('profile').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });
+      toast({ title: 'Usuario eliminado', description: 'El usuario ha sido eliminado exitosamente' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
   });
 
   const handleCreateUser = () => {
-    if (!formData.name || !formData.employeeNumber || !formData.phone || !formData.email) {
-      toast({
-        title: "Error",
-        description: "Todos los campos son obligatorios",
-        variant: "destructive"
-      });
+    if (!formData.inspector_name || !formData.email || !formData.password) {
+      toast({ title: 'Error', description: 'Nombre, correo y contraseña son obligatorios', variant: 'destructive' });
       return;
     }
-
-    const newUser: User = {
-      id: (users.length + 1).toString(),
-      ...formData,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    setUsers([...users, newUser]);
-    setFormData({
-      name: '',
-      employeeNumber: '',
-      phone: '',
-      email: '',
-      role: 'View'
-    });
-    setIsCreateDialogOpen(false);
-
-    toast({
-      title: "Usuario creado",
-      description: `Se ha creado el usuario ${formData.name} exitosamente`
-    });
+    createMutation.mutate(formData);
   };
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId));
-    toast({
-      title: "Usuario eliminado",
-      description: "El usuario ha sido eliminado exitosamente"
+  const handleUpdateUser = () => {
+    if (!editingUser) return;
+    updateMutation.mutate({ id: editingUser.id, data: formData });
+  };
+
+  const startEditing = (user: ProfileWithRole) => {
+    setEditingUser(user);
+    setFormData({
+      inspector_name: user.inspector_name,
+      emp_id: user.emp_id ?? '',
+      phone: user.phone ?? '',
+      email: user.email ?? '',
+      role: user.app_role ?? 'inspector',
+      password: '',
     });
   };
 
   const getRoleBadgeVariant = (role: string) => {
-    return role === 'Admin' ? 'default' : 'secondary';
+    switch (role) {
+      case 'admin': return 'default' as const;
+      case 'engineer': return 'secondary' as const;
+      default: return 'outline' as const;
+    }
   };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Admin';
+      case 'engineer': return 'Engineer';
+      case 'inspector': return 'Inspector';
+      default: return role;
+    }
+  };
+
+  const adminCount = users.filter(u => u.app_role === 'admin').length;
+  const engineerCount = users.filter(u => u.app_role === 'engineer').length;
+  const inspectorCount = users.filter(u => u.app_role === 'inspector').length;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -114,125 +226,40 @@ const Users = () => {
             <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
             <p className="text-muted-foreground">Administra los usuarios del sistema</p>
           </div>
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Crear Usuario
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-                <DialogDescription>
-                  Completa los datos del nuevo usuario del sistema
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre Completo</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej: Juan Pérez"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="employeeNumber">Número de Empleado</Label>
-                  <Input
-                    id="employeeNumber"
-                    value={formData.employeeNumber}
-                    onChange={(e) => setFormData({ ...formData, employeeNumber: e.target.value })}
-                    placeholder="Ej: EMP001"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Número de Teléfono</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Ej: +52 555 1234567"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo de la Empresa</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Ej: usuario@empresa.com"
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="role">Rol</Label>
-                  <Select value={formData.role} onValueChange={(value: 'Admin' | 'View') => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="View">View</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button onClick={handleCreateUser} className="flex-1">
-                    Crear Usuario
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsCreateDialogOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          {isAdmin && (
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => { setIsCreateDialogOpen(open); if (!open) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Crear Usuario
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                  <DialogDescription>Completa los datos del nuevo usuario</DialogDescription>
+                </DialogHeader>
+                <UserForm
+                  formData={formData}
+                  setFormData={setFormData}
+                  onSubmit={handleCreateUser}
+                  onCancel={() => setIsCreateDialogOpen(false)}
+                  isLoading={createMutation.isPending}
+                  submitLabel="Crear Usuario"
+                  showPassword
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
-              <User className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{users.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Administradores</CardTitle>
-              <User className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{users.filter(u => u.role === 'Admin').length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Solo Vista</CardTitle>
-              <User className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{users.filter(u => u.role === 'View').length}</div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-4">
+          <StatCard title="Total Usuarios" count={users.length} />
+          <StatCard title="Administradores" count={adminCount} />
+          <StatCard title="Ingenieros" count={engineerCount} />
+          <StatCard title="Inspectores" count={inspectorCount} />
         </div>
 
         {/* Users Table */}
@@ -242,54 +269,157 @@ const Users = () => {
             <CardDescription>Todos los usuarios registrados en el sistema</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Número de Empleado</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Fecha de Creación</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.employeeNumber}</TableCell>
-                    <TableCell>{user.phone}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{user.createdAt}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>No. Empleado</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Estado</TableHead>
+                    {isAdmin && <TableHead>Acciones</TableHead>}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.inspector_name}</TableCell>
+                      <TableCell>{user.emp_id ?? '-'}</TableCell>
+                      <TableCell>{user.phone ?? '-'}</TableCell>
+                      <TableCell>{user.email ?? '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(user.app_role ?? '')}>
+                          {getRoleLabel(user.app_role ?? '')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.active ? 'default' : 'destructive'}>
+                          {user.active ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => startEditing(user)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteMutation.mutate(user.id)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingUser} onOpenChange={(open) => { if (!open) { setEditingUser(null); resetForm(); } }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Usuario</DialogTitle>
+              <DialogDescription>Modifica los datos del usuario</DialogDescription>
+            </DialogHeader>
+            <UserForm
+              formData={formData}
+              setFormData={setFormData}
+              onSubmit={handleUpdateUser}
+              onCancel={() => { setEditingUser(null); resetForm(); }}
+              isLoading={updateMutation.isPending}
+              submitLabel="Guardar Cambios"
+              showPassword={false}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
 };
+
+// Extracted form component
+interface UserFormProps {
+  formData: { inspector_name: string; emp_id: string; phone: string; email: string; role: string; password: string };
+  setFormData: (data: any) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+  submitLabel: string;
+  showPassword: boolean;
+}
+
+const UserForm = ({ formData, setFormData, onSubmit, onCancel, isLoading, submitLabel, showPassword }: UserFormProps) => (
+  <div className="space-y-4">
+    <div className="space-y-2">
+      <Label htmlFor="name">Nombre Completo</Label>
+      <Input id="name" value={formData.inspector_name} onChange={(e) => setFormData({ ...formData, inspector_name: e.target.value })} placeholder="Ej: Juan Pérez" />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="emp_id">Número de Empleado</Label>
+      <Input id="emp_id" value={formData.emp_id} onChange={(e) => setFormData({ ...formData, emp_id: e.target.value })} placeholder="Ej: EMP001" />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="phone">Teléfono</Label>
+      <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Ej: +52 555 1234567" />
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="email">Correo de la Empresa</Label>
+      <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Ej: usuario@empresa.com" />
+    </div>
+    {showPassword && (
+      <div className="space-y-2">
+        <Label htmlFor="password">Contraseña</Label>
+        <Input id="password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Mínimo 6 caracteres" />
+      </div>
+    )}
+    <div className="space-y-2">
+      <Label htmlFor="role">Rol</Label>
+      <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="admin">Admin</SelectItem>
+          <SelectItem value="engineer">Engineer</SelectItem>
+          <SelectItem value="inspector">Inspector</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+    <div className="flex gap-2 pt-4">
+      <Button onClick={onSubmit} className="flex-1" disabled={isLoading}>
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+        {submitLabel}
+      </Button>
+      <Button variant="outline" onClick={onCancel} className="flex-1">Cancelar</Button>
+    </div>
+  </div>
+);
+
+// Extracted stat card
+const StatCard = ({ title, count }: { title: string; count: number }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <User className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{count}</div>
+    </CardContent>
+  </Card>
+);
 
 export default Users;

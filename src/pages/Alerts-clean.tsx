@@ -202,7 +202,9 @@ const AlertsPage = () => {
                   machines={machines}
                   processingAlertId={processingAlertId}
                   alertComments={alertComments}
+                  resolveNotes={{}}
                   onCommentChange={handleCommentChange}
+                  onResolveNoteChange={() => {}}
                   onAcknowledge={handleAcknowledge}
                   onResolve={handleResolve}
                 />
