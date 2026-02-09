@@ -42,29 +42,13 @@ const Users = () => {
     password: '',
   });
 
-  // Fetch profiles with roles
+  // Fetch profiles with roles using RPC
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['profiles-with-roles'],
     queryFn: async () => {
-      const { data: profiles, error } = await supabase
-        .from('profile')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const { data, error } = await supabase.rpc('get_profiles_with_roles');
       if (error) throw error;
-
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      // Map roles by email match (user_roles uses auth.uid, profile uses its own id)
-      // We need to get auth users to map
-      const rolesMap = new Map(roles?.map(r => [r.user_id, r.role]) ?? []);
-
-      return (profiles ?? []).map(p => ({
-        ...p,
-        app_role: rolesMap.get(p.id) ?? p.role,
-      })) as ProfileWithRole[];
+      return (data ?? []) as ProfileWithRole[];
     },
   });
 
@@ -101,32 +85,21 @@ const Users = () => {
     },
   });
 
-  // Update user mutation
+  // Update user mutation - uses edge function
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
-      const { error: profileError } = await supabase
-        .from('profile')
-        .update({
+      const { data: response, error } = await supabase.functions.invoke('update-user', {
+        body: {
+          profile_id: id,
           inspector_name: data.inspector_name,
           emp_id: data.emp_id || null,
           phone: data.phone || null,
           email: data.email,
           role: data.role,
-        })
-        .eq('id', id);
-      if (profileError) throw profileError;
-
-      // Update role
-      const { error: deleteRoleError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', id);
-      if (deleteRoleError) throw deleteRoleError;
-
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: id, role: data.role as AppRole });
-      if (roleError) throw roleError;
+        },
+      });
+      if (error) throw error;
+      if (response?.error) throw new Error(response.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });

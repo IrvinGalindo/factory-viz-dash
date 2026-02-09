@@ -332,6 +332,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_profiles_with_roles: {
+        Args: never
+        Returns: {
+          active: boolean
+          app_role: string
+          created_at: string
+          email: string
+          emp_id: string
+          id: string
+          inspector_name: string
+          phone: string
+          role: string
+        }[]
+      }
       get_user_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
