@@ -57,6 +57,8 @@ const Users = () => {
         .from('user_roles')
         .select('user_id, role');
 
+      // Map roles by email match (user_roles uses auth.uid, profile uses its own id)
+      // We need to get auth users to map
       const rolesMap = new Map(roles?.map(r => [r.user_id, r.role]) ?? []);
 
       return (profiles ?? []).map(p => ({
@@ -71,41 +73,22 @@ const Users = () => {
     setEditingUser(null);
   };
 
-  // Create user mutation
+  // Create user mutation - uses edge function to skip email verification
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // Create auth user first
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: { emailRedirectTo: window.location.origin },
-      });
-      if (authError) throw authError;
-
-      // Create profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profile')
-        .insert({
+      const { data: response, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: data.email,
+          password: data.password,
           inspector_name: data.inspector_name,
           emp_id: data.emp_id || null,
           phone: data.phone || null,
-          email: data.email,
           role: data.role,
-        })
-        .select()
-        .single();
-      if (profileError) throw profileError;
-
-      // Assign role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: profile.id,
-          role: data.role as AppRole,
-        });
-      if (roleError) throw roleError;
-
-      return profile;
+        },
+      });
+      if (error) throw error;
+      if (response?.error) throw new Error(response.error);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });
