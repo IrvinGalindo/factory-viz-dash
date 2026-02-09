@@ -69,17 +69,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (profileData) {
         setProfile(profileData as Profile);
+      }
 
-        // Get role from user_roles table
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', profileData.id)
-          .maybeSingle();
+      // Get role from user_roles table using auth.uid (not profile.id)
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-        if (roleData) {
-          setAppRole(roleData.role as AppRole);
-        }
+      if (roleData) {
+        setAppRole(roleData.role as AppRole);
       }
     } catch (error) {
       console.error('Error fetching profile/role:', error);
