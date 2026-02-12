@@ -137,7 +137,7 @@ const Users = () => {
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin': return 'default' as const;
-      case 'engineer': return 'secondary' as const;
+      case 'supervisor': return 'secondary' as const;
       default: return 'outline' as const;
     }
   };
@@ -145,15 +145,17 @@ const Users = () => {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin': return 'Admin';
-      case 'engineer': return 'Engineer';
+      case 'supervisor': return 'Supervisor';
       case 'inspector': return 'Inspector';
+      case 'operator': return 'Operador';
       default: return role;
     }
   };
 
   const adminCount = users.filter(u => u.role === 'admin').length;
-  const engineerCount = users.filter(u => u.role === 'engineer').length;
+  const supervisorCount = users.filter(u => u.role === 'supervisor').length;
   const inspectorCount = users.filter(u => u.role === 'inspector').length;
+  const operatorCount = users.filter(u => u.role === 'operator').length;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -191,11 +193,12 @@ const Users = () => {
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <StatCard title="Total Usuarios" count={users.length} />
           <StatCard title="Administradores" count={adminCount} />
-          <StatCard title="Ingenieros" count={engineerCount} />
+          <StatCard title="Supervisores" count={supervisorCount} />
           <StatCard title="Inspectores" count={inspectorCount} />
+          <StatCard title="Operadores" count={operatorCount} />
         </div>
 
         <Card>
@@ -331,8 +334,9 @@ const UserForm = ({ formData, setFormData, onSubmit, onCancel, isLoading, submit
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="admin">Admin</SelectItem>
-          <SelectItem value="engineer">Engineer</SelectItem>
+          <SelectItem value="supervisor">Supervisor</SelectItem>
           <SelectItem value="inspector">Inspector</SelectItem>
+          <SelectItem value="operator">Operador</SelectItem>
         </SelectContent>
       </Select>
     </div>
