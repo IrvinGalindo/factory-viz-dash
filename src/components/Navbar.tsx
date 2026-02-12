@@ -27,8 +27,9 @@ const Navbar = () => {
   const getRoleLabel = (role: string | null) => {
     switch (role) {
       case 'admin': return 'Admin';
-      case 'engineer': return 'Engineer';
+      case 'supervisor': return 'Supervisor';
       case 'inspector': return 'Inspector';
+      case 'operator': return 'Operador';
       default: return role ?? '';
     }
   };
