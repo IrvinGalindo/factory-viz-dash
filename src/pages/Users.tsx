@@ -4,78 +4,62 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, AppRole } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-
-interface ProfileWithRole {
-  id: string;
-  inspector_name: string;
-  emp_id: string | null;
-  phone: string | null;
-  email: string | null;
-  role: string;
-  active: boolean | null;
-  created_at: string | null;
-  app_role?: string;
-}
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  updateUserStatus,
+  UserResponse,
+} from '@/services/spcApi';
 
 const Users = () => {
   const { toast } = useToast();
   const { canEdit } = useAuth();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<ProfileWithRole | null>(null);
+  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const isAdmin = canEdit('users');
 
   const [formData, setFormData] = useState({
-    inspector_name: '',
-    emp_id: '',
+    full_name: '',
     phone: '',
     email: '',
     role: 'inspector' as string,
     password: '',
   });
 
-  // Fetch profiles with roles using RPC
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ['profiles-with-roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_profiles_with_roles');
-      if (error) throw error;
-      return (data ?? []) as ProfileWithRole[];
-    },
+  const { data, isLoading } = useQuery({
+    queryKey: ['users-list'],
+    queryFn: () => fetchUsers(1, 100),
   });
 
+  const users = data?.users ?? [];
+
   const resetForm = () => {
-    setFormData({ inspector_name: '', emp_id: '', phone: '', email: '', role: 'inspector', password: '' });
+    setFormData({ full_name: '', phone: '', email: '', role: 'inspector', password: '' });
     setEditingUser(null);
   };
 
-  // Create user mutation - uses edge function to skip email verification
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const { data: response, error } = await supabase.functions.invoke('create-user', {
-        body: {
-          email: data.email,
-          password: data.password,
-          inspector_name: data.inspector_name,
-          emp_id: data.emp_id || null,
-          phone: data.phone || null,
-          role: data.role,
-        },
-      });
-      if (error) throw error;
-      if (response?.error) throw new Error(response.error);
-      return response;
-    },
+    mutationFn: (d: typeof formData) =>
+      createUser({
+        email: d.email,
+        password: d.password,
+        full_name: d.full_name,
+        phone: d.phone || undefined,
+        role: d.role,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['users-list'] });
       setIsCreateDialogOpen(false);
       resetForm();
       toast({ title: 'Usuario creado', description: 'El usuario se ha creado exitosamente' });
@@ -85,24 +69,15 @@ const Users = () => {
     },
   });
 
-  // Update user mutation - uses edge function
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
-      const { data: response, error } = await supabase.functions.invoke('update-user', {
-        body: {
-          profile_id: id,
-          inspector_name: data.inspector_name,
-          emp_id: data.emp_id || null,
-          phone: data.phone || null,
-          email: data.email,
-          role: data.role,
-        },
-      });
-      if (error) throw error;
-      if (response?.error) throw new Error(response.error);
-    },
+    mutationFn: ({ id, data: d }: { id: string; data: Partial<typeof formData> }) =>
+      updateUser(id, {
+        full_name: d.full_name,
+        phone: d.phone || undefined,
+        role: d.role,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['users-list'] });
       setEditingUser(null);
       resetForm();
       toast({ title: 'Usuario actualizado', description: 'Los cambios se guardaron exitosamente' });
@@ -112,14 +87,10 @@ const Users = () => {
     },
   });
 
-  // Delete user mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('profile').delete().eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => deleteUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profiles-with-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['users-list'] });
       toast({ title: 'Usuario eliminado', description: 'El usuario ha sido eliminado exitosamente' });
     },
     onError: (error: Error) => {
@@ -127,8 +98,20 @@ const Users = () => {
     },
   });
 
+  const statusMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      updateUserStatus(id, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-list'] });
+      toast({ title: 'Estado actualizado' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const handleCreateUser = () => {
-    if (!formData.inspector_name || !formData.email || !formData.password) {
+    if (!formData.full_name || !formData.email || !formData.password) {
       toast({ title: 'Error', description: 'Nombre, correo y contraseña son obligatorios', variant: 'destructive' });
       return;
     }
@@ -137,17 +120,16 @@ const Users = () => {
 
   const handleUpdateUser = () => {
     if (!editingUser) return;
-    updateMutation.mutate({ id: editingUser.id, data: formData });
+    updateMutation.mutate({ id: editingUser.user_id, data: formData });
   };
 
-  const startEditing = (user: ProfileWithRole) => {
+  const startEditing = (user: UserResponse) => {
     setEditingUser(user);
     setFormData({
-      inspector_name: user.inspector_name,
-      emp_id: user.emp_id ?? '',
+      full_name: user.full_name,
       phone: user.phone ?? '',
-      email: user.email ?? '',
-      role: user.app_role ?? 'inspector',
+      email: user.email,
+      role: user.role ?? 'inspector',
       password: '',
     });
   };
@@ -169,14 +151,13 @@ const Users = () => {
     }
   };
 
-  const adminCount = users.filter(u => u.app_role === 'admin').length;
-  const engineerCount = users.filter(u => u.app_role === 'engineer').length;
-  const inspectorCount = users.filter(u => u.app_role === 'inspector').length;
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  const engineerCount = users.filter(u => u.role === 'engineer').length;
+  const inspectorCount = users.filter(u => u.role === 'inspector').length;
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
@@ -210,7 +191,6 @@ const Users = () => {
           )}
         </div>
 
-        {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard title="Total Usuarios" count={users.length} />
           <StatCard title="Administradores" count={adminCount} />
@@ -218,7 +198,6 @@ const Users = () => {
           <StatCard title="Inspectores" count={inspectorCount} />
         </div>
 
-        {/* Users Table */}
         <Card>
           <CardHeader>
             <CardTitle>Lista de Usuarios</CardTitle>
@@ -234,7 +213,6 @@ const Users = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
-                    <TableHead>No. Empleado</TableHead>
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Rol</TableHead>
@@ -244,20 +222,29 @@ const Users = () => {
                 </TableHeader>
                 <TableBody>
                   {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.inspector_name}</TableCell>
-                      <TableCell>{user.emp_id ?? '-'}</TableCell>
+                    <TableRow key={user.user_id}>
+                      <TableCell className="font-medium">{user.full_name}</TableCell>
                       <TableCell>{user.phone ?? '-'}</TableCell>
-                      <TableCell>{user.email ?? '-'}</TableCell>
+                      <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.app_role ?? '')}>
-                          {getRoleLabel(user.app_role ?? '')}
+                        <Badge variant={getRoleBadgeVariant(user.role)}>
+                          {getRoleLabel(user.role)}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.active ? 'default' : 'destructive'}>
-                          {user.active ? 'Activo' : 'Inactivo'}
-                        </Badge>
+                        {isAdmin ? (
+                          <Switch
+                            checked={user.is_active}
+                            onCheckedChange={(checked) =>
+                              statusMutation.mutate({ id: user.user_id, isActive: checked })
+                            }
+                            disabled={statusMutation.isPending}
+                          />
+                        ) : (
+                          <Badge variant={user.is_active ? 'default' : 'destructive'}>
+                            {user.is_active ? 'Activo' : 'Inactivo'}
+                          </Badge>
+                        )}
                       </TableCell>
                       {isAdmin && (
                         <TableCell>
@@ -268,7 +255,7 @@ const Users = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => deleteMutation.mutate(user.id)}
+                              onClick={() => deleteMutation.mutate(user.user_id)}
                               disabled={deleteMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -284,7 +271,6 @@ const Users = () => {
           </CardContent>
         </Card>
 
-        {/* Edit Dialog */}
         <Dialog open={!!editingUser} onOpenChange={(open) => { if (!open) { setEditingUser(null); resetForm(); } }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -307,9 +293,8 @@ const Users = () => {
   );
 };
 
-// Extracted form component
 interface UserFormProps {
-  formData: { inspector_name: string; emp_id: string; phone: string; email: string; role: string; password: string };
+  formData: { full_name: string; phone: string; email: string; role: string; password: string };
   setFormData: (data: any) => void;
   onSubmit: () => void;
   onCancel: () => void;
@@ -322,11 +307,7 @@ const UserForm = ({ formData, setFormData, onSubmit, onCancel, isLoading, submit
   <div className="space-y-4">
     <div className="space-y-2">
       <Label htmlFor="name">Nombre Completo</Label>
-      <Input id="name" value={formData.inspector_name} onChange={(e) => setFormData({ ...formData, inspector_name: e.target.value })} placeholder="Ej: Juan Pérez" />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="emp_id">Número de Empleado</Label>
-      <Input id="emp_id" value={formData.emp_id} onChange={(e) => setFormData({ ...formData, emp_id: e.target.value })} placeholder="Ej: EMP001" />
+      <Input id="name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} placeholder="Ej: Juan Pérez" />
     </div>
     <div className="space-y-2">
       <Label htmlFor="phone">Teléfono</Label>
@@ -365,7 +346,6 @@ const UserForm = ({ formData, setFormData, onSubmit, onCancel, isLoading, submit
   </div>
 );
 
-// Extracted stat card
 const StatCard = ({ title, count }: { title: string; count: number }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

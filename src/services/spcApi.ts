@@ -333,9 +333,162 @@ export const resolveAlert = async (
 };
 
 
+// ================== USERS API ==================
+
+export interface UserResponse {
+  user_id: string;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  role: string;
+  created_at: string;
+  last_sign_in: string | null;
+  is_active: boolean;
+}
+
+export interface UserListResponse {
+  users: UserResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface UserStatsResponse {
+  total_users: number;
+  active_users: number;
+  inactive_users: number;
+  role_distribution: Record<string, number>;
+  created_this_month: number;
+}
+
+export interface UserLoginResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: UserResponse;
+}
+
+export const loginUser = async (email: string, password: string): Promise<UserLoginResponse> => {
+  const response = await fetch(`${API_BASE_URL}/users/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Error de autenticación" }));
+    throw new Error(err.detail || "Correo o contraseña incorrectos");
+  }
+  return response.json();
+};
+
+export const logoutUser = async (accessToken: string): Promise<void> => {
+  await fetch(`${API_BASE_URL}/users/logout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+};
+
+export const refreshToken = async (refreshToken: string): Promise<UserLoginResponse> => {
+  const response = await fetch(`${API_BASE_URL}/users/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  if (!response.ok) throw new Error("Error al refrescar token");
+  return response.json();
+};
+
+export const fetchUsers = async (
+  page = 1,
+  pageSize = 50,
+  search?: string,
+  role?: string,
+  isActive?: boolean
+): Promise<UserListResponse> => {
+  let url = `${API_BASE_URL}/users/?page=${page}&page_size=${pageSize}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (role) url += `&role=${encodeURIComponent(role)}`;
+  if (isActive !== undefined) url += `&is_active=${isActive}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Error al obtener usuarios");
+  return response.json();
+};
+
+export const fetchUserStats = async (): Promise<UserStatsResponse> => {
+  const response = await fetch(`${API_BASE_URL}/users/stats`);
+  if (!response.ok) throw new Error("Error al obtener estadísticas");
+  return response.json();
+};
+
+export const createUser = async (data: {
+  email: string;
+  password: string;
+  full_name: string;
+  phone?: string;
+  role?: string;
+}): Promise<UserResponse> => {
+  const response = await fetch(`${API_BASE_URL}/users/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: "Error al crear usuario" }));
+    throw new Error(err.detail || "Error al crear usuario");
+  }
+  return response.json();
+};
+
+export const updateUser = async (
+  userId: string,
+  data: { full_name?: string; phone?: string; role?: string }
+): Promise<UserResponse> => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Error al actualizar usuario");
+  return response.json();
+};
+
+export const deleteUser = async (userId: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("Error al eliminar usuario");
+};
+
+export const updateUserStatus = async (
+  userId: string,
+  isActive: boolean,
+  banDurationHours?: number
+): Promise<void> => {
+  const body: Record<string, any> = { is_active: isActive };
+  if (!isActive && banDurationHours) body.ban_duration_hours = banDurationHours;
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error("Error al cambiar estado del usuario");
+};
+
+export const updateUserPassword = async (userId: string, password: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/password`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  if (!response.ok) throw new Error("Error al cambiar contraseña");
+};
+
 // WebSocket URL for real-time alerts
 export const getAlertsWebSocketUrl = (): string => {
-  // Convert HTTP URL to WebSocket URL
   const wsUrl = API_BASE_URL.replace("https://", "wss://").replace("http://", "ws://");
   return `${wsUrl}/spc/ws/alerts`;
 };

@@ -68,7 +68,7 @@ const Navbar = () => {
           <div className="flex items-center gap-3">
             {profile && (
               <span className="text-sm text-muted-foreground hidden sm:inline">
-                {profile.inspector_name}
+                {profile.full_name}
               </span>
             )}
             <Badge variant="outline">{getRoleLabel(appRole)}</Badge>
