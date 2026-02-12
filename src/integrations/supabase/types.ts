@@ -309,20 +309,20 @@ export type Database = {
       user_roles: {
         Row: {
           created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["public"]["Enums"]["user_role_type"]
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["user_role_type"]
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["user_role_type"]
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -332,6 +332,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ban_user_fn: {
+        Args: { ban_until_date: string; target_user_id: string }
+        Returns: Json
+      }
       get_profiles_with_roles: {
         Args: never
         Returns: {
@@ -347,6 +351,13 @@ export type Database = {
         }[]
       }
       get_user_role: { Args: { _user_id: string }; Returns: string }
+      get_users_ban_status: {
+        Args: never
+        Returns: {
+          banned_until: string
+          id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -354,9 +365,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      unban_user_fn: { Args: { target_user_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "engineer" | "inspector"
+      user_role_type: "admin" | "supervisor" | "inspector" | "operator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -485,6 +498,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "engineer", "inspector"],
+      user_role_type: ["admin", "supervisor", "inspector", "operator"],
     },
   },
 } as const

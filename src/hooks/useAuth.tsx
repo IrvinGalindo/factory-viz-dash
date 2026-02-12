@@ -1,30 +1,19 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { loginUser, logoutUser, refreshToken as refreshTokenApi, UserResponse } from '@/services/spcApi';
 
 export type AppRole = 'admin' | 'engineer' | 'inspector';
 
-interface Profile {
-  id: string;
-  inspector_name: string;
-  email: string | null;
-  phone: string | null;
-  emp_id: string | null;
-  active: boolean | null;
-  role: string;
-}
-
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  profile: Profile | null;
-  appRole: AppRole | null;
+  user: UserResponse | null;
   loading: boolean;
+  accessToken: string | null;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   canAccess: (route: string) => boolean;
   canEdit: (resource: string) => boolean;
+  appRole: AppRole | null;
+  profile: UserResponse | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,86 +40,76 @@ const EDIT_ACCESS: Record<AppRole, string[]> = {
   inspector: [],
 };
 
+const AUTH_STORAGE_KEY = 'spc_auth';
+
+interface StoredAuth {
+  access_token: string;
+  refresh_token: string;
+  user: UserResponse;
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [appRole, setAppRole] = useState<AppRole | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshTokenValue, setRefreshTokenValue] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfileAndRole = async (userId: string, userEmail: string | undefined) => {
+  const appRole = (user?.role as AppRole) || null;
+
+  // Restore session from localStorage
+  useEffect(() => {
     try {
-      // Find profile by email match
-      const { data: profileData } = await supabase
-        .from('profile')
-        .select('*')
-        .eq('email', userEmail ?? '')
-        .maybeSingle();
-
-      if (profileData) {
-        setProfile(profileData as Profile);
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (stored) {
+        const parsed: StoredAuth = JSON.parse(stored);
+        setUser(parsed.user);
+        setAccessToken(parsed.access_token);
+        setRefreshTokenValue(parsed.refresh_token);
       }
+    } catch {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+    setLoading(false);
+  }, []);
 
-      // Get role from user_roles table using auth.uid (not profile.id)
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
+  const persistAuth = (data: StoredAuth) => {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data));
+  };
 
-      if (roleData) {
-        setAppRole(roleData.role as AppRole);
-      }
+  const clearAuth = () => {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    setUser(null);
+    setAccessToken(null);
+    setRefreshTokenValue(null);
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const response = await loginUser(email, password);
+      const authData: StoredAuth = {
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+        user: response.user,
+      };
+      setUser(response.user);
+      setAccessToken(response.access_token);
+      setRefreshTokenValue(response.refresh_token);
+      persistAuth(authData);
+      return { error: null };
     } catch (error) {
-      console.error('Error fetching profile/role:', error);
+      return { error: error as Error };
     }
   };
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          // Use setTimeout to avoid potential deadlock with Supabase client
-          setTimeout(() => {
-            fetchProfileAndRole(session.user.id, session.user.email);
-          }, 0);
-        } else {
-          setProfile(null);
-          setAppRole(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // THEN check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        fetchProfileAndRole(session.user.id, session.user.email);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
-  };
-
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-    setAppRole(null);
+    if (accessToken) {
+      try {
+        await logoutUser(accessToken);
+      } catch {
+        // ignore logout errors
+      }
+    }
+    clearAuth();
   };
 
   const hasRole = (role: AppRole) => appRole === role;
@@ -149,15 +128,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        session,
-        profile,
-        appRole,
         loading,
+        accessToken,
         signIn,
         signOut,
         hasRole,
         canAccess,
         canEdit,
+        appRole,
+        profile: user,
       }}
     >
       {children}

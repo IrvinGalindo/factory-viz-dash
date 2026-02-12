@@ -40,7 +40,7 @@ const Login = () => {
     if (error) {
       toast({
         title: 'Error de autenticación',
-        description: 'Correo o contraseña incorrectos',
+        description: error.message || 'Correo o contraseña incorrectos',
         variant: 'destructive',
       });
     } else {
