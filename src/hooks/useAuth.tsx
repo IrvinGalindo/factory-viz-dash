@@ -1,7 +1,19 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { loginUser, logoutUser, refreshToken as refreshTokenApi, UserResponse } from '@/services/spcApi';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+} from "react";
+import {
+  loginUser,
+  logoutUser,
+  refreshToken as refreshTokenApi,
+  UserResponse,
+} from "@/services/spcApi";
 
-export type AppRole = 'admin' | 'supervisor' | 'inspector' | 'operator';
+export type AppRole = "admin" | "engineer" | "inspector";
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -21,28 +33,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
 // Route access by role
 const ROUTE_ACCESS: Record<AppRole, string[]> = {
-  admin: ['/', '/alerts', '/users', '/machines', '/settings'],
-  supervisor: ['/', '/alerts', '/users', '/machines', '/settings'],
-  inspector: ['/', '/alerts', '/machines'],
-  operator: ['/', '/alerts', '/machines'],
+  admin: ["/", "/alerts", "/users", "/machines", "/settings"],
+  engineer: ["/", "/alerts", "/users", "/machines", "/settings"],
+  inspector: ["/", "/alerts", "/machines"],
 };
 
 // Edit permissions by role
 const EDIT_ACCESS: Record<AppRole, string[]> = {
   admin: ['alerts', 'users', 'machines', 'settings'],
-  supervisor: ['alerts'],
+  engineer: ['alerts'],
   inspector: [],
-  operator: [],
 };
 
-const AUTH_STORAGE_KEY = 'spc_auth';
+const AUTH_STORAGE_KEY = "spc_auth";
 
 interface StoredAuth {
   access_token: string;
@@ -53,7 +63,9 @@ interface StoredAuth {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [refreshTokenValue, setRefreshTokenValue] = useState<string | null>(null);
+  const [refreshTokenValue, setRefreshTokenValue] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   const appRole = (user?.role as AppRole) || null;
