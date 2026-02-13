@@ -23,6 +23,12 @@ import { AlertsPagination } from "@/components/alerts/AlertsPagination";
 const AlertsPage = () => {
   // State management
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [paginationMeta, setPaginationMeta] = useState({
+    total: 0,
+    page: 1,
+    page_size: 20,
+    total_pages: 1,
+  });
   const [machines, setMachines] = useState<
     Array<{ machine_id: string; line: string; cmm_name: string }>
   >([]);
@@ -85,19 +91,27 @@ const AlertsPage = () => {
     loadMachines();
   }, []);
 
-  // Load alerts based on filters
-  const loadAlerts = useCallback(async () => {
+  const loadAlerts = useCallback(async (page: number = 1) => {
     setLoading(true);
     try {
       const machineId =
         selectedMachineId === "all" ? undefined : selectedMachineId;
       const status = selectedStatus === "all" ? undefined : selectedStatus;
-      const response = await fetchAlerts(machineId, status, 1, 100);
+      const response = await fetchAlerts(machineId, status, page, 20);
 
-      const alertsData = Array.isArray(response)
-        ? response
-        : response.alerts || [];
+
+      // New PaginatedResponse structure: response.data contains the array directly
+      console.log("Alerts API Response:", response);
+      console.log("Alerts data array:", response.data);
+      const alertsData = response.data || [];
+      console.log("Setting alerts to:", alertsData);
       setAlerts(alertsData);
+
+      // Save pagination metadata from API
+      if (response.pagination) {
+        setPaginationMeta(response.pagination);
+        console.log("Pagination metadata:", response.pagination);
+      }
     } catch (err) {
       console.error("Error loading alerts:", err);
       setAlerts([]);
@@ -107,8 +121,32 @@ const AlertsPage = () => {
   }, [selectedMachineId, selectedStatus]);
 
   useEffect(() => {
-    loadAlerts();
+    loadAlerts(1);
+  }, [selectedMachineId, selectedStatus]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Alerts state:", alerts);
+    console.log("Filtered alerts:", filteredAlerts);
+    console.log("Filtered alerts length:", filteredAlerts.length);
+  }, [alerts, filteredAlerts]);
+
+  // Custom pagination handlers that call API
+  const handlePageChangeCustom = useCallback((page: number) => {
+    loadAlerts(page);
   }, [loadAlerts]);
+
+  const handleNextPageCustom = useCallback(() => {
+    if (paginationMeta.page < paginationMeta.total_pages) {
+      loadAlerts(paginationMeta.page + 1);
+    }
+  }, [paginationMeta.page, paginationMeta.total_pages, loadAlerts]);
+
+  const handlePreviousPageCustom = useCallback(() => {
+    if (paginationMeta.page > 1) {
+      loadAlerts(paginationMeta.page - 1);
+    }
+  }, [paginationMeta.page, loadAlerts]);
 
   // Handle clearing filters and resetting pagination
   const handleClearFilters = useCallback(() => {
@@ -129,7 +167,7 @@ const AlertsPage = () => {
               Historial completo de alertas del sistema
             </p>
           </div>
-          <Button onClick={loadAlerts} disabled={loading}>
+          <Button onClick={() => loadAlerts()} disabled={loading}>
             <RefreshCw
               className={cn("h-4 w-4 mr-2", loading && "animate-spin")}
             />
@@ -174,7 +212,7 @@ const AlertsPage = () => {
           <CardHeader>
             <CardTitle>Lista de Alertas</CardTitle>
             <CardDescription>
-              {filteredAlerts.length} alertas encontradas
+              Total: {paginationMeta.total} alertas
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -215,14 +253,14 @@ const AlertsPage = () => {
           </CardContent>
           {!loading && filteredAlerts.length > 0 && (
             <AlertsPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              startIndex={paginationInfo.startIndex}
-              endIndex={paginationInfo.endIndex}
-              totalItems={filteredAlerts.length}
-              onPreviousPage={handlePreviousPage}
-              onNextPage={handleNextPage}
-              onPageChange={handlePageChange}
+              currentPage={paginationMeta.page}
+              totalPages={paginationMeta.total_pages}
+              startIndex={(paginationMeta.page - 1) * paginationMeta.page_size + 1}
+              endIndex={Math.min(paginationMeta.page * paginationMeta.page_size, paginationMeta.total)}
+              totalItems={paginationMeta.total}
+              onPreviousPage={handlePreviousPageCustom}
+              onNextPage={handleNextPageCustom}
+              onPageChange={handlePageChangeCustom}
             />
           )}
         </Card>

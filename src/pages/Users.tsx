@@ -55,6 +55,15 @@ const Users = () => {
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const isAdmin = canEdit("users");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState({
+    total: 0,
+    page: 1,
+    page_size: 20,
+    total_pages: 1,
+  });
+
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
@@ -64,11 +73,18 @@ const Users = () => {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["users-list"],
-    queryFn: () => fetchUsers(1, 100),
+    queryKey: ["users-list", currentPage],
+    queryFn: async () => {
+      const response = await fetchUsers(currentPage, 20);
+      // Save pagination metadata
+      if (response.pagination) {
+        setPaginationMeta(response.pagination);
+      }
+      return response;
+    },
   });
 
-  const users = data?.users ?? [];
+  const users = data?.data ?? [];
 
   const resetForm = () => {
     setFormData({
@@ -370,6 +386,36 @@ const Users = () => {
               </Table>
             )}
           </CardContent>
+
+          {/* Pagination Controls */}
+          {paginationMeta.total_pages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {((paginationMeta.page - 1) * paginationMeta.page_size) + 1} - {Math.min(paginationMeta.page * paginationMeta.page_size, paginationMeta.total)} de {paginationMeta.total} usuarios
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={paginationMeta.page === 1 || isLoading}
+                >
+                  Anterior
+                </Button>
+                <div className="text-sm">
+                  Página {paginationMeta.page} de {paginationMeta.total_pages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(paginationMeta.total_pages, prev + 1))}
+                  disabled={paginationMeta.page === paginationMeta.total_pages || isLoading}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
 
         <Dialog
@@ -415,7 +461,13 @@ interface UserFormProps {
     role: string;
     password: string;
   };
-  setFormData: (data: any) => void;
+  setFormData: (data: {
+    full_name: string;
+    phone: string;
+    email: string;
+    role: string;
+    password: string;
+  }) => void;
   onSubmit: () => void;
   onCancel: () => void;
   isLoading: boolean;
@@ -474,7 +526,7 @@ const UserForm = ({
           onChange={(e) =>
             setFormData({ ...formData, password: e.target.value })
           }
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
         />
       </div>
     )}

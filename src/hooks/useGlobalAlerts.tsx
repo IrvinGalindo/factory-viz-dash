@@ -31,14 +31,19 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const processedAlertsRef = useRef<Set<string>>(new Set());
 
+  // Unique Session ID for this client instance (prevents self-echo)
+  const sessionId = useRef(Math.random().toString(36).substring(2, 9)).current;
+
   const handleNewRealtimeAlert = useCallback((alert: Alert) => {
     // Evitar pop-ups para alertas modificadas (reconocidas, resueltas o actualizadas)
-    console.log("Alerta recibida:", alert);
-    console.log("Tipo de Alerta:", alert.alert_type);
+    // console.log("Alerta recibida:", alert);
+    // console.log("Tipo de Alerta:", alert.alert_type);
     if (
       alert.alert_type === "alert_acknowledgment" ||
       alert.alert_type === "alert_resolved" ||
-      alert.alert_type === "alert_updated"
+      alert.alert_type === "alert_updated" ||
+      alert.status === "acknowledged" ||
+      alert.status === "resolved"
     ) {
       console.log("Alerta modificada ignorada:", alert);
       return;
@@ -59,10 +64,10 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
     playAlertSound(alert.severity);
 
     // Format alert message
-    const value = alert.value?.toFixed(4);
-    const nominal = alert.nominal?.toFixed(4);
-    const deviation = Math.abs(alert.deviation || 0).toFixed(4);
-    
+    const value = typeof alert.value === 'number' ? alert.value.toFixed(4) : "N/A";
+    const nominal = typeof alert.nominal === 'number' ? alert.nominal.toFixed(4) : "N/A";
+    const deviation = typeof alert.deviation === 'number' ? Math.abs(alert.deviation).toFixed(4) : "0.0000";
+
     let alertTypeText = "";
     if (alert.alert_type === "below_lower_limit") {
       alertTypeText = `Debajo del límite inferior`;
@@ -80,10 +85,12 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
     const itemDisplay = alert.item || alert.column_name || "Sistema";
     const processInfo = alert.process_number ? `Proceso ${alert.process_number}` : "Sin proceso";
     const title = `🚨 Alerta: ${processInfo} - ${itemDisplay} - ${alertTypeText}`;
-    
+
     // Descripción más detallada
-    const description = `Valor: ${value} | Nominal: ${nominal} | Desviación: ${deviation} | Límites: [${alert.lower_limit?.toFixed(4)}, ${alert.upper_limit?.toFixed(4)}]`;
-    
+    const lowerLimit = typeof alert.lower_limit === 'number' ? alert.lower_limit.toFixed(4) : "N/A";
+    const upperLimit = typeof alert.upper_limit === 'number' ? alert.upper_limit.toFixed(4) : "N/A";
+    const description = `Valor: ${value} | Nominal: ${nominal} | Desviación: ${deviation} | Límites: [${lowerLimit}, ${upperLimit}]`;
+
     console.log("✅ Mostrando toast para alerta válida:", { type: alert.alert_type, title, description });
     toast.error(title, {
       description: description,
@@ -108,7 +115,7 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log("✅ [Global] WebSocket de alertas conectado");
+        console.log("✅ [Global] WebSocket de alertas conectado (Session ID:", sessionId, ")");
         setIsConnected(true);
         setConnectionError(null);
       };
@@ -116,46 +123,104 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log("Mensaje WebSocket recibido:", message);
-          
+          // console.log("Mensaje WebSocket recibido:", message);
+
           const allowedTypes = ["alert", "connection", "pong"];
           if (!allowedTypes.includes(message.type)) {
-            console.warn("Mensaje WebSocket ignorado: Tipo no permitido", message.type);
+            // console.warn("Mensaje WebSocket ignorado: Tipo no permitido", message.type);
+            return;
+          }
+
+          // Check for self-sent messages (via sender_id or sessionId) at top level
+          if (message.sender_id === sessionId || message.sessionId === sessionId) {
+            //  console.log("🛑 Ignorando mensaje enviado por esta misma sesión:", sessionId);
             return;
           }
 
           if (message.type === "alert" && message.data) {
-            const alertData = message.data;
-            
-            // Deducir el tipo de alerta basándose en el valor y los límites
-            let deducedAlertType = alertData.event || "unknown";
-            if (!alertData.event) {
-              if (alertData.value < alertData.lower_limit) {
+            let alertData = message.data;
+
+            // Handle case where data is a JSON string
+            if (typeof alertData === 'string') {
+              try {
+                alertData = JSON.parse(alertData);
+              } catch (e) {
+                console.error("Error parsing alert data string:", e);
+              }
+            }
+            // Use Stringify to force full visibility in console text
+            console.log("🔍 [Global] Processed alert data (JSON):", JSON.stringify(alertData, null, 2));
+
+            // Handle double nesting (message.data.data)
+            if (alertData && alertData.data && typeof alertData.data === 'object') {
+              console.log("📦 [Global] Desempaquetando data anidada:", alertData.data);
+              alertData = alertData.data;
+            }
+
+            // Check for self-sent messages inside data object
+            if (alertData.sender_id === sessionId || alertData.sessionId === sessionId) {
+              console.log("🛑 Ignorando mensaje (data) enviado por esta misma sesión:", sessionId);
+              return;
+            }
+
+            // --- DATA EXTRACTION LOGIC ---
+            // Extract from 'measurement' and 'alert_info' objects which are now confirmed in logs
+            const measure = alertData.measurement || {};
+            const info = alertData.alert_info || {};
+
+            // Priority: top level -> measurement object -> defaults
+            let value = alertData.value ?? measure.value;
+            let nominal = alertData.nominal ?? measure.nominal;
+            let upperLimit = alertData.upper_limit ?? measure.upper_limit;
+            let lowerLimit = alertData.lower_limit ?? measure.lower_limit;
+            let deviation = alertData.deviation ?? measure.deviation;
+
+            // Calculate deviation if missing
+            if (deviation === undefined && typeof value === 'number' && typeof nominal === 'number') {
+              deviation = Math.abs(value - nominal);
+            }
+
+            // Determine alert type
+            let deducedAlertType = alertData.event || alertData.alert_type || info.alert_type || "unknown";
+
+            if (!deducedAlertType || deducedAlertType === "unknown") {
+              if (value < lowerLimit) {
                 deducedAlertType = "below_lower_limit";
-              } else if (alertData.value > alertData.upper_limit) {
+              } else if (value > upperLimit) {
                 deducedAlertType = "above_upper_limit";
               } else {
                 deducedAlertType = "out_of_spec";
               }
             }
-            
+
+            // Extract ID with fallback
+            const alertId = alertData.alert_id || alertData.id;
+
+            // Check status at the top level or inside alert_info
+            const status = alertData.status || info.status || "pending";
+
+            if (status === "acknowledged" || status === "resolved") {
+              console.log(`ℹ️ Ignorando alerta ${alertId} con estado ${status}`);
+              return;
+            }
+
             const alert: Alert = {
-              alert_id: alertData.alert_id,
+              alert_id: alertId,
               machine_id: alertData.machine_id || "",
               process_id: alertData.process_id || "",
               result_process_id: alertData.result_process_id || "",
-              process_number: alertData.processNumber || alertData.process_number || null,
-              item: alertData.item || null,
-              column_name: alertData.columnName || alertData.column_name || null,
+              process_number: alertData.processNumber || alertData.process_number || measure.process_number || null,
+              item: alertData.item || null || measure.item,
+              column_name: alertData.columnName || alertData.column_name || measure.column_name || null,
               alert_type: deducedAlertType,
-              value: alertData.value,
-              nominal: alertData.nominal,
-              upper_limit: alertData.upper_limit,
-              lower_limit: alertData.lower_limit,
-              deviation: alertData.deviation,
+              value: value,
+              nominal: nominal,
+              upper_limit: upperLimit,
+              lower_limit: lowerLimit,
+              deviation: deviation,
               measurement_index: alertData.measurement_index,
-              status: alertData.status || "pending",
-              severity: alertData.severity || null,
+              status: status,
+              severity: alertData.severity || info.severity || null,
               notes: alertData.notes || null,
               created_at: message.timestamp || new Date().toISOString(),
               acknowledged_at: null,
@@ -195,16 +260,25 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
       console.error("Error al crear WebSocket:", error);
       setConnectionError("No se pudo establecer la conexión");
     }
-  }, [handleNewRealtimeAlert]);
+  }, [handleNewRealtimeAlert, sessionId]);
 
   const sendMessage = useCallback((message: object) => {
+    // Check if event is alert_updated to prevent sending
+    const msg = message as any;
+    if (msg.event === 'alert_updated' || msg.type === 'alert_updated' || msg.data?.event === 'alert_updated') {
+      console.log("🚫 [Global] Bloqueando envío de mensaje alert_updated:", message);
+      return;
+    }
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(message));
-      console.log("📤 [Global] Mensaje enviado:", message);
+      // Attach session ID to identify sender
+      const messageWithId = { ...message, sender_id: sessionId };
+      wsRef.current.send(JSON.stringify(messageWithId));
+      console.log("📤 [Global] Mensaje enviado:", messageWithId);
     } else {
       console.warn("⚠️ WebSocket no conectado");
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     connect();
@@ -212,9 +286,13 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
     return () => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
       if (wsRef.current) {
+        // Prevent onclose from triggering a reconnect
+        wsRef.current.onclose = null;
         wsRef.current.close();
+        wsRef.current = null;
       }
     };
   }, [connect]);

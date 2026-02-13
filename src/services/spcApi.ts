@@ -1,5 +1,30 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
 
+// Standard API Response Types
+export interface SuccessResponse<T = any> {
+  success: true;
+  data: T;
+  message: string;
+}
+
+export interface PaginatedResponse<T = any> {
+  success: true;
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+  message: string;
+}
+
+export interface ErrorResponse {
+  success: false;
+  data: null;
+  message: string;
+}
+
 export interface Machine {
   machine_id: string;
   cmm_name: string | null;
@@ -74,7 +99,9 @@ export const fetchMachines = async (): Promise<Machine[]> => {
   if (!response.ok) {
     throw new Error("Error al obtener las máquinas");
   }
-  return response.json();
+  const data = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return data.data || data;
 };
 
 export const fetchMachine = async (machineId: string): Promise<Machine> => {
@@ -82,7 +109,9 @@ export const fetchMachine = async (machineId: string): Promise<Machine> => {
   if (!response.ok) {
     throw new Error("Error al obtener la máquina");
   }
-  return response.json();
+  const data = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return data.data || data;
 };
 
 export const createMachine = async (data: CreateMachineData): Promise<Machine> => {
@@ -96,7 +125,9 @@ export const createMachine = async (data: CreateMachineData): Promise<Machine> =
   if (!response.ok) {
     throw new Error("Error al crear la máquina");
   }
-  return response.json();
+  const responseData = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return responseData.data || responseData;
 };
 
 export const updateMachine = async (
@@ -113,7 +144,9 @@ export const updateMachine = async (
   if (!response.ok) {
     throw new Error("Error al actualizar la máquina");
   }
-  return response.json();
+  const responseData = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return responseData.data || responseData;
 };
 
 export const deleteMachine = async (machineId: string): Promise<void> => {
@@ -123,6 +156,7 @@ export const deleteMachine = async (machineId: string): Promise<void> => {
   if (!response.ok) {
     throw new Error("Error al eliminar la máquina");
   }
+  // No return value for DELETE operations
 };
 
 // ================== SPC API ==================
@@ -132,7 +166,9 @@ export const fetchSPCMachines = async (): Promise<Array<{ machine_id: string; li
   if (!response.ok) {
     throw new Error("Error al obtener las máquinas SPC");
   }
-  return response.json();
+  const data = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return data.data || data;
 };
 
 export const fetchProcessNumbers = async (machineId: string): Promise<string[]> => {
@@ -142,20 +178,26 @@ export const fetchProcessNumbers = async (machineId: string): Promise<string[]> 
   if (!response.ok) {
     throw new Error("Error al obtener los procesos");
   }
-  return response.json();
+  const data = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return data.data || data;
 };
 
 export interface SPCApiResponse {
-  values: number[];
-  machineId: string;
-  machine_id: string;
-  line: string;
-  totalGroups: number;
-  calculatedAt: string;
-  measurements: SPCMeasurement[];
-  calculationMethod: string;
-  lastResultProcessId: string;
-  totalSamplesProcessed: number;
+  success: boolean;
+  data: {
+    values: number[];
+    machineId: string;
+    machine_id: string;
+    line: string;
+    totalGroups: number;
+    calculatedAt: string;
+    measurements: SPCMeasurement[];
+    calculationMethod: string;
+    lastResultProcessId: string;
+    totalSamplesProcessed: number;
+  };
+  message: string;
 }
 
 export const fetchSPCChartData = async (
@@ -165,7 +207,7 @@ export const fetchSPCChartData = async (
   toDate?: string
 ): Promise<SPCApiResponse | null> => {
   let url = `${API_BASE_URL}/spc/chart-data?machine_id=${encodeURIComponent(machineId)}&process_number=${encodeURIComponent(processNumber)}`;
-  
+
   if (fromDate) {
     url += `&from_date=${encodeURIComponent(fromDate)}`;
   }
@@ -180,6 +222,7 @@ export const fetchSPCChartData = async (
     }
     throw new Error("Error al obtener los datos SPC");
   }
+  // Return the full response with success, data, message structure
   return response.json();
 };
 
@@ -201,7 +244,7 @@ export interface AddProcessData {
   }>;
 }
 
-export const addProcess = async (data: AddProcessData): Promise<any> => {
+export const addProcess = async (data: AddProcessData): Promise<{ message: string }> => {
   const response = await fetch(`${API_BASE_URL}/spc/add-process`, {
     method: "POST",
     headers: {
@@ -242,13 +285,9 @@ export interface Alert {
   resolved_by: string | null;
 }
 
-export interface AlertsResponse {
-  alerts: Alert[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
+
+// AlertsResponse now uses the standard PaginatedResponse structure
+export type AlertsResponse = PaginatedResponse<Alert>;
 
 export const fetchAlerts = async (
   machineId?: string,
@@ -257,7 +296,7 @@ export const fetchAlerts = async (
   pageSize: number = 20
 ): Promise<AlertsResponse> => {
   let url = `${API_BASE_URL}/spc/alerts?page=${page}&page_size=${pageSize}`;
-  
+
   if (machineId) {
     url += `&machine_id=${encodeURIComponent(machineId)}`;
   }
@@ -269,6 +308,7 @@ export const fetchAlerts = async (
   if (!response.ok) {
     throw new Error("Error al obtener las alertas");
   }
+  // Return the full PaginatedResponse structure
   return response.json();
 };
 
@@ -279,27 +319,29 @@ export const acknowledgeAlert = async (
 ): Promise<Alert> => {
   // 🔧 Enviar como 'acknowledged_notes' porque así lo espera el backend
   let url = `${API_BASE_URL}/spc/alerts/${alertId}/acknowledge?acknowledged_by=${encodeURIComponent(acknowledgedBy || "system")}`;
-  
+
   if (notes && notes.trim()) {
     // El backend usa 'acknowledged_notes', no 'notes'
     url += `&acknowledged_notes=${encodeURIComponent(notes)}`;
   }
-  
+
   console.log("🚀 Acknowledge URL:", url);
-  
+
   const response = await fetch(url, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error("❌ Error response:", errorText);
     throw new Error(`Error al reconocer la alerta: ${response.status}`);
   }
-  return response.json();
+  const data = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return data.data || data;
 };
 
 export const resolveAlert = async (
@@ -309,27 +351,29 @@ export const resolveAlert = async (
 ): Promise<Alert> => {
   // 🔧 Enviar como 'resolved_notes' porque así lo espera el backend
   let url = `${API_BASE_URL}/spc/alerts/${alertId}/resolve?resolved_by=${encodeURIComponent(resolvedBy || "system")}`;
-  
+
   if (resolvedNotes && resolvedNotes.trim()) {
     // El backend usa 'resolved_notes', mantener como está
     url += `&resolved_notes=${encodeURIComponent(resolvedNotes)}`;
   }
-  
+
   console.log("🚀 Resolve URL:", url);
-  
+
   const response = await fetch(url, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error("❌ Error response:", errorText);
     throw new Error(`Error al resolver la alerta: ${response.status}`);
   }
-  return response.json();
+  const data = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return data.data || data;
 };
 
 
@@ -346,27 +390,40 @@ export interface UserResponse {
   is_active: boolean;
 }
 
-export interface UserListResponse {
-  users: UserResponse[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
-}
+// Users now use PaginatedResponse - old interface kept for reference
+// export interface UserListResponse {
+//   success: boolean;
+//   data: {
+//     users: UserResponse[];
+//     total: number;
+//     page: number;
+//     page_size: number;
+//     total_pages: number;
+//   };
+//   message: string;
+// }
 
 export interface UserStatsResponse {
-  total_users: number;
-  active_users: number;
-  inactive_users: number;
-  role_distribution: Record<string, number>;
-  created_this_month: number;
+  success: boolean;
+  data: {
+    total_users: number;
+    active_users: number;
+    inactive_users: number;
+    role_distribution: Record<string, number>;
+    created_this_month: number;
+  };
+  message: string;
 }
 
 export interface UserLoginResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  user: UserResponse;
+  success: boolean;
+  data: {
+    access_token: string;
+    refresh_token: string;
+    token_type: string;
+    user: UserResponse;
+  };
+  message: string;
 }
 
 export const loginUser = async (email: string, password: string): Promise<UserLoginResponse> => {
@@ -408,7 +465,7 @@ export const fetchUsers = async (
   search?: string,
   role?: string,
   isActive?: boolean
-): Promise<UserListResponse> => {
+): Promise<PaginatedResponse<UserResponse>> => {
   let url = `${API_BASE_URL}/users/?page=${page}&page_size=${pageSize}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
   if (role) url += `&role=${encodeURIComponent(role)}`;
@@ -421,7 +478,9 @@ export const fetchUsers = async (
 export const fetchUserStats = async (): Promise<UserStatsResponse> => {
   const response = await fetch(`${API_BASE_URL}/users/stats`);
   if (!response.ok) throw new Error("Error al obtener estadísticas");
-  return response.json();
+  const data = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return data.data || data;
 };
 
 export const createUser = async (data: {
@@ -440,7 +499,9 @@ export const createUser = async (data: {
     const err = await response.json().catch(() => ({ detail: "Error al crear usuario" }));
     throw new Error(err.detail || "Error al crear usuario");
   }
-  return response.json();
+  const responseData = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return responseData.data || responseData;
 };
 
 export const updateUser = async (
@@ -453,7 +514,9 @@ export const updateUser = async (
     body: JSON.stringify(data),
   });
   if (!response.ok) throw new Error("Error al actualizar usuario");
-  return response.json();
+  const responseData = await response.json();
+  // Manejar el nuevo formato de respuesta
+  return responseData.data || responseData;
 };
 
 export const deleteUser = async (userId: string): Promise<void> => {
@@ -468,7 +531,7 @@ export const updateUserStatus = async (
   isActive: boolean,
   banDurationHours?: number
 ): Promise<void> => {
-  const body: Record<string, any> = { is_active: isActive };
+  const body: Record<string, unknown> = { is_active: isActive };
   if (!isActive && banDurationHours) body.ban_duration_hours = banDurationHours;
   const response = await fetch(`${API_BASE_URL}/users/${userId}/status`, {
     method: "PATCH",

@@ -80,9 +80,10 @@ const AlertsPage = () => {
     try {
       const machineId = selectedMachineId === "all" ? undefined : selectedMachineId;
       const status = selectedStatus === "all" ? undefined : selectedStatus;
-      const response = await fetchAlerts(machineId, status, 1, 100);
+      const response = await fetchAlerts(machineId, status, 1, 20);
 
-      const alertsData = Array.isArray(response) ? response : response.alerts || [];
+      // New PaginatedResponse structure: response.data contains the array directly
+      const alertsData = response.data || [];
       setAlerts(alertsData);
     } catch (err) {
       console.error("Error loading alerts:", err);
@@ -188,7 +189,7 @@ const AlertsPage = () => {
                   alertComments={alertComments}
                   resolveNotes={{}}
                   onCommentChange={handleCommentChange}
-                  onResolveNoteChange={() => {}}
+                  onResolveNoteChange={() => { }}
                   onAcknowledge={handleAcknowledge}
                   onResolve={handleResolve}
                 />

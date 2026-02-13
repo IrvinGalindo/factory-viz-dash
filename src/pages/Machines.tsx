@@ -23,6 +23,10 @@ const Machines = () => {
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
   const [formData, setFormData] = useState({
     cmm_name: '',
     line: '',
@@ -102,10 +106,10 @@ const Machines = () => {
         process: formData.process
       });
 
-      setMachines(machines.map(machine => 
+      setMachines(machines.map(machine =>
         machine.machine_id === editingMachine.machine_id ? updatedMachine : machine
       ));
-      
+
       setFormData({ cmm_name: '', line: '', process: '' });
       setEditingMachine(null);
       setIsEditDialogOpen(false);
@@ -117,7 +121,7 @@ const Machines = () => {
     } catch (error) {
       console.error('Error updating machine:', error);
       toast({
-        title: "Error", 
+        title: "Error",
         description: "No se pudo actualizar la máquina",
         variant: "destructive"
       });
@@ -177,7 +181,7 @@ const Machines = () => {
             <h1 className="text-3xl font-bold tracking-tight">Gestión de Máquinas</h1>
             <p className="text-muted-foreground">Administra las máquinas del sistema</p>
           </div>
-          
+
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" onClick={resetForm}>
@@ -203,7 +207,7 @@ const Machines = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="line">Línea *</Label>
                   <Input
@@ -214,7 +218,7 @@ const Machines = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="process">Proceso *</Label>
                   <Input
@@ -230,8 +234,8 @@ const Machines = () => {
                   <Button onClick={handleCreateMachine} className="flex-1">
                     Crear Máquina
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setIsCreateDialogOpen(false);
                       resetForm();
@@ -266,7 +270,7 @@ const Machines = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="edit_line">Línea *</Label>
                 <Input
@@ -277,7 +281,7 @@ const Machines = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="edit_process">Proceso *</Label>
                 <Input
@@ -293,8 +297,8 @@ const Machines = () => {
                 <Button onClick={handleEditMachine} className="flex-1">
                   Actualizar
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setIsEditDialogOpen(false);
                     resetForm();
@@ -319,7 +323,7 @@ const Machines = () => {
               <div className="text-2xl font-bold">{machines.length}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Con Línea</CardTitle>
@@ -331,7 +335,7 @@ const Machines = () => {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Con Proceso</CardTitle>
@@ -370,45 +374,77 @@ const Machines = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {machines.map((machine) => (
-                    <TableRow key={machine.machine_id}>
-                      <TableCell className="font-medium">
-                        {machine.cmm_name || 'Sin nombre'}
-                      </TableCell>
-                      <TableCell>
-                        {machine.line || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {machine.process || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(machine.created_at).toLocaleDateString('es-MX')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => openEditDialog(machine)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteMachine(machine.machine_id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {machines
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((machine) => (
+                      <TableRow key={machine.machine_id}>
+                        <TableCell className="font-medium">
+                          {machine.cmm_name || 'Sin nombre'}
+                        </TableCell>
+                        <TableCell>
+                          {machine.line || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {machine.process || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(machine.created_at).toLocaleDateString('es-MX')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(machine)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteMachine(machine.machine_id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             )}
           </CardContent>
         </Card>
+
+        {/* Pagination Controls */}
+        {machines.length > itemsPerPage && (
+          <div className="flex items-center justify-between px-2">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, machines.length)} de {machines.length} máquinas
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <div className="text-sm">
+                Página {currentPage} de {Math.ceil(machines.length / itemsPerPage)}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(machines.length / itemsPerPage), prev + 1))}
+                disabled={currentPage === Math.ceil(machines.length / itemsPerPage)}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

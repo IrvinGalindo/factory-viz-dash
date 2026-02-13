@@ -52,7 +52,55 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedProcess, setSelectedProcess] = useState("");
   const [processes, setProcesses] = useState<string[]>([]);
-  const [spcData, setSpcData] = useState<any>(null);
+  const [spcData, setSpcData] = useState<{
+    data: Array<{
+      point: number;
+      value: number;
+      ucl: number;
+      lcl: number;
+      avg: number;
+      spec: number;
+      min: number;
+      max: number;
+      specUpper: number;
+      specLower: number;
+      date: string;
+    }>;
+    stats: {
+      spec: number;
+      specDisplay: string;
+      specUpper: number;
+      specLower: number;
+      ucl: number;
+      lcl: number;
+      avg: number;
+      std: number;
+      stdWithin: number;
+      stdOverall: number;
+      max: number;
+      min: number;
+      cp: number;
+      cpk: number;
+      pp: number;
+      ppk: number;
+      sampleCount: number;
+      measurementName: string;
+      outOfSpecCount: number;
+      outOfControlCount: number;
+      status: string;
+      rBar: number;
+      d2: number;
+    };
+    rawValues: number[];
+    subgroups: Array<{
+      subgroupNumber: number;
+      values: number[];
+      average: number;
+      range: number;
+      size: number;
+    }> | null;
+    processInfo: { processNumber: string; item: string };
+  } | null>(null);
   const [spcLoading, setSpcLoading] = useState(false);
   const [machineOpen, setMachineOpen] = useState(false);
   const [processOpen, setProcessOpen] = useState(false);
@@ -150,15 +198,15 @@ const Dashboard = () => {
           toDate
         );
 
-        if (!apiData || !apiData.measurements || apiData.measurements.length === 0) {
+        if (!apiData || !apiData.data || !apiData.data.measurements || apiData.data.measurements.length === 0) {
           console.log("⚠️ No hay datos SPC disponibles");
           setSpcData(null);
           return;
         }
 
         // Get values and measurements from the API (values at root level)
-        const rawValues = apiData.values || [];
-        const measurement = apiData.measurements[0];
+        const rawValues = apiData.data.values || [];
+        const measurement = apiData.data.measurements[0];
         
         // Create chart data using actual values from the API
         const chartData = rawValues.map((value, index) => ({
@@ -212,6 +260,8 @@ const Dashboard = () => {
           status: statusDisplay,
           rBar: measurement.rBar,
           d2: measurement.d2,
+          machineUp: measurement.upperTolerance,
+          machineLow: measurement.lowerTolerance,
         };
 
         console.log("🎊 Final chart data:", chartData.length, "points");

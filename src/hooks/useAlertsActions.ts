@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Alert, acknowledgeAlert, resolveAlert } from "@/services/spcApi";
 import { useGlobalAlertsContext } from "@/hooks/useGlobalAlerts";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) => void) => {
@@ -8,6 +9,10 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
   const [alertComments, setAlertComments] = useState<Record<string, string>>({});
   const [resolveNotes, setResolveNotes] = useState<Record<string, string>>({});
   const { sendMessage } = useGlobalAlertsContext();
+  const { user } = useAuth();
+
+  // Get the user's display name, fallback to 'operator' if not available
+  const userName = user?.full_name || 'operator';
 
   const sendAlertAcknowledgmentViaWebSocket = useCallback(
     (alert: Alert, comment: string) => {
@@ -29,14 +34,14 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
           lower_limit: alert.lower_limit,
           deviation: alert.deviation,
           comment: comment,
-          acknowledged_by: "operator",
+          acknowledged_by: userName,
           acknowledged_at: new Date().toISOString(),
         },
       };
 
       sendMessage(message);
     },
-    [sendMessage]
+    [sendMessage, userName]
   );
 
   const handleAcknowledge = useCallback(
@@ -52,7 +57,8 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
       try {
         const alertToAcknowledge = alerts.find((a) => a.alert_id === alertId);
 
-        await acknowledgeAlert(alertId, "operator", comment);
+        const response = await acknowledgeAlert(alertId, userName, comment);
+        const updatedAlert = response.data; // Extract from SuccessResponse
 
         if (alertToAcknowledge) {
           sendAlertAcknowledgmentViaWebSocket(alertToAcknowledge, comment);
@@ -62,11 +68,11 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
           alerts.map((a) =>
             a.alert_id === alertId
               ? {
-                  ...a,
-                  status: "acknowledged",
-                  acknowledged_at: new Date().toISOString(),
-                  notes: comment,
-                }
+                ...a,
+                status: "acknowledged",
+                acknowledged_at: new Date().toISOString(),
+                notes: comment,
+              }
               : a
           )
         );
@@ -85,7 +91,7 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
         setProcessingAlertId(null);
       }
     },
-    [alerts, alertComments, sendAlertAcknowledgmentViaWebSocket, setAlerts]
+    [alerts, alertComments, sendAlertAcknowledgmentViaWebSocket, setAlerts, userName]
   );
 
   const handleResolve = useCallback(
@@ -99,17 +105,18 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
       setProcessingAlertId(alertId);
       try {
         // Send to API with the notes
-        await resolveAlert(alertId, "operator", note);
-        
+        const response = await resolveAlert(alertId, userName, note);
+        const updatedAlert = response.data; // Extract from SuccessResponse
+
         setAlerts(
           alerts.map((a) =>
             a.alert_id === alertId
               ? {
-                  ...a,
-                  status: "resolved",
-                  resolved_at: new Date().toISOString(),
-                  notes: note,
-                }
+                ...a,
+                status: "resolved",
+                resolved_at: new Date().toISOString(),
+                notes: note,
+              }
               : a
           )
         );
@@ -128,7 +135,7 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
         setProcessingAlertId(null);
       }
     },
-    [alerts, resolveNotes, setAlerts]
+    [alerts, resolveNotes, setAlerts, userName]
   );
 
   const handleCommentChange = useCallback((alertId: string, comment: string) => {

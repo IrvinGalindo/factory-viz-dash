@@ -101,13 +101,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await loginUser(email, password);
       const authData: StoredAuth = {
-        access_token: response.access_token,
-        refresh_token: response.refresh_token,
-        user: response.user,
+        access_token: response.data.access_token,
+        refresh_token: response.data.refresh_token,
+        user: response.data.user,
       };
-      setUser(response.user);
-      setAccessToken(response.access_token);
-      setRefreshTokenValue(response.refresh_token);
+      setUser(response.data.user);
+      setAccessToken(response.data.access_token);
+      setRefreshTokenValue(response.data.refresh_token);
       persistAuth(authData);
       return { error: null };
     } catch (error) {

@@ -29,7 +29,6 @@ import {
   acknowledgeAlert,
   resolveAlert,
   Alert,
-  AlertsResponse,
 } from "@/services/spcApi";
 import { useAlertsWebSocket } from "@/hooks/useAlertsWebSocket";
 
@@ -59,14 +58,13 @@ export const AlertsSection = ({
     onNewAlert: onNewRealtimeAlert,
   });
 
-  // Fetch initial alerts
   const loadAlerts = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetchAlerts(machineId, undefined, 1, 50);
-      setAlerts(response.alerts || []);
-    } catch (err: any) {
+      setAlerts(response.data || []);
+    } catch (err) {
       console.error("Error loading alerts:", err);
       setError(err.message);
     } finally {
@@ -175,7 +173,7 @@ export const AlertsSection = ({
   const formatAlertTitle = (alert: Alert) => {
     const value = alert.value?.toFixed(4);
     const machineName = alert.item || "Item";
-    
+
     switch (alert.alert_type) {
       case "below_lower_limit":
         return `${machineName}: El valor ${value} debajo del límite inferior`;
@@ -301,15 +299,14 @@ export const AlertsSection = ({
                 return (
                   <div
                     key={alert.alert_id}
-                    className={`p-4 rounded-lg border transition-all ${
-                      isRealtime
+                    className={`p-4 rounded-lg border transition-all ${isRealtime
                         ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 animate-pulse"
                         : alert.status === "resolved"
-                        ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-                        : alert.status === "acknowledged"
-                        ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
-                        : "bg-card border-border hover:bg-muted/50"
-                    }`}
+                          ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                          : alert.status === "acknowledged"
+                            ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800"
+                            : "bg-card border-border hover:bg-muted/50"
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       {getSeverityIcon(alert.severity)}
