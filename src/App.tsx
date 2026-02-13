@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { ThemeProvider } from "@/components/theme-provider";
+import { LanguageProvider } from "@/components/language-provider";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Users from "./pages/Users";
@@ -17,24 +19,28 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Sonner position="top-right" richColors closeButton />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<Index />} />
-              <Route path="users" element={<ProtectedRoute requiredAccess="/users"><Users /></ProtectedRoute>} />
-              <Route path="machines" element={<ProtectedRoute requiredAccess="/machines"><Machines /></ProtectedRoute>} />
-              <Route path="alerts" element={<ProtectedRoute requiredAccess="/alerts"><Alerts /></ProtectedRoute>} />
-              <Route path="settings" element={<ProtectedRoute requiredAccess="/settings"><Settings /></ProtectedRoute>} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <LanguageProvider defaultLanguage="es" storageKey="vite-ui-language">
+        <TooltipProvider>
+          <Sonner position="top-right" richColors closeButton />
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                  <Route index element={<Index />} />
+                  <Route path="users" element={<ProtectedRoute requiredAccess="/users"><Users /></ProtectedRoute>} />
+                  <Route path="machines" element={<ProtectedRoute requiredAccess="/machines"><Machines /></ProtectedRoute>} />
+                  <Route path="alerts" element={<ProtectedRoute requiredAccess="/alerts"><Alerts /></ProtectedRoute>} />
+                  <Route path="settings" element={<ProtectedRoute requiredAccess="/settings"><Settings /></ProtectedRoute>} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

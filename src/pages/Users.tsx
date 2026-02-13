@@ -35,8 +35,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Edit, Trash2, User, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/components/language-provider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchUsers,
@@ -48,9 +49,9 @@ import {
 } from "@/services/spcApi";
 
 const Users = () => {
-  const { toast } = useToast();
   const { canEdit } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const isAdmin = canEdit("users");
@@ -110,16 +111,13 @@ const Users = () => {
       queryClient.invalidateQueries({ queryKey: ["users-list"] });
       setIsCreateDialogOpen(false);
       resetForm();
-      toast({
-        title: "Usuario creado",
-        description: "El usuario se ha creado exitosamente",
+      toast.success(t('user_created'), {
+        description: t('success'),
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
@@ -141,16 +139,13 @@ const Users = () => {
       queryClient.invalidateQueries({ queryKey: ["users-list"] });
       setEditingUser(null);
       resetForm();
-      toast({
-        title: "Usuario actualizado",
-        description: "Los cambios se guardaron exitosamente",
+      toast.success(t('user_updated'), {
+        description: t('success'),
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
@@ -159,16 +154,13 @@ const Users = () => {
     mutationFn: (id: string) => deleteUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-list"] });
-      toast({
-        title: "Usuario eliminado",
-        description: "El usuario ha sido eliminado exitosamente",
+      toast.success(t('user_deleted'), {
+        description: t('success'),
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
@@ -178,32 +170,45 @@ const Users = () => {
       updateUserStatus(id, isActive),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-list"] });
-      toast({ title: "Estado actualizado" });
+      toast.success("Estado actualizado");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
 
   const handleCreateUser = () => {
     if (!formData.full_name || !formData.email || !formData.password) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Nombre, correo y contraseña son obligatorios",
-        variant: "destructive",
       });
       return;
     }
-    createMutation.mutate(formData);
+
+    const cleanedData = {
+      ...formData,
+      full_name: formData.full_name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.replace(/[\s-]/g, ''),
+      password: formData.password.trim(),
+    };
+
+    createMutation.mutate(cleanedData);
   };
 
   const handleUpdateUser = () => {
     if (!editingUser) return;
-    updateMutation.mutate({ id: editingUser.user_id, data: formData });
+
+    const cleanedData = {
+      ...formData,
+      full_name: formData.full_name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.replace(/[\s-]/g, ''),
+    };
+
+    updateMutation.mutate({ id: editingUser.user_id, data: cleanedData });
   };
 
   const startEditing = (user: UserResponse) => {
@@ -251,10 +256,10 @@ const Users = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Gestión de Usuarios
+              {t('users_title')}
             </h1>
             <p className="text-muted-foreground">
-              Administra los usuarios del sistema
+              {t('users_desc')}
             </p>
           </div>
 
@@ -269,14 +274,14 @@ const Users = () => {
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Crear Usuario
+                  {t('create_user')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                  <DialogTitle>{t('create_user')}</DialogTitle>
                   <DialogDescription>
-                    Completa los datos del nuevo usuario
+                    {t('users_desc')}
                   </DialogDescription>
                 </DialogHeader>
                 <UserForm
@@ -285,7 +290,7 @@ const Users = () => {
                   onSubmit={handleCreateUser}
                   onCancel={() => setIsCreateDialogOpen(false)}
                   isLoading={createMutation.isPending}
-                  submitLabel="Crear Usuario"
+                  submitLabel={t('create')}
                   showPassword
                 />
               </DialogContent>
@@ -294,17 +299,17 @@ const Users = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Total Usuarios" count={users.length} />
-          <StatCard title="Administradores" count={adminCount} />
-          <StatCard title="Ingenieros" count={engineerCount} />
-          <StatCard title="Inspectores" count={inspectorCount} />
+          <StatCard title={t('total_users')} count={users.length} />
+          <StatCard title={t('admins')} count={adminCount} />
+          <StatCard title={t('engineers')} count={engineerCount} />
+          <StatCard title={t('inspectors')} count={inspectorCount} />
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Usuarios</CardTitle>
+            <CardTitle>{t('user_list')}</CardTitle>
             <CardDescription>
-              Todos los usuarios registrados en el sistema
+              {t('user_list_desc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -316,12 +321,12 @@ const Users = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Teléfono</TableHead>
+                    <TableHead>{t('name')}</TableHead>
+                    <TableHead>{t('phone')}</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Rol</TableHead>
-                    <TableHead>Estado</TableHead>
-                    {isAdmin && <TableHead>Acciones</TableHead>}
+                    <TableHead>{t('role')}</TableHead>
+                    <TableHead>{t('status')}</TableHead>
+                    {isAdmin && <TableHead>{t('actions')}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -353,7 +358,7 @@ const Users = () => {
                           <Badge
                             variant={user.is_active ? "default" : "destructive"}
                           >
-                            {user.is_active ? "Activo" : "Inactivo"}
+                            {user.is_active ? t('active') : t('inactive')}
                           </Badge>
                         )}
                       </TableCell>
@@ -391,7 +396,12 @@ const Users = () => {
           {paginationMeta.total_pages > 1 && (
             <div className="flex items-center justify-between px-6 py-4 border-t">
               <div className="text-sm text-muted-foreground">
-                Mostrando {((paginationMeta.page - 1) * paginationMeta.page_size) + 1} - {Math.min(paginationMeta.page * paginationMeta.page_size, paginationMeta.total)} de {paginationMeta.total} usuarios
+                {t('showing_items')
+                  .replace('{items}', t('label_users'))
+                  .replace('{start}', (((paginationMeta.page - 1) * paginationMeta.page_size) + 1).toString())
+                  .replace('{end}', Math.min(paginationMeta.page * paginationMeta.page_size, paginationMeta.total).toString())
+                  .replace('{total}', paginationMeta.total.toString())
+                }
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -400,10 +410,12 @@ const Users = () => {
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={paginationMeta.page === 1 || isLoading}
                 >
-                  Anterior
+                  {t('previous')}
                 </Button>
                 <div className="text-sm">
-                  Página {paginationMeta.page} de {paginationMeta.total_pages}
+                  {t('page_of')
+                    .replace('{current}', paginationMeta.page.toString())
+                    .replace('{total}', paginationMeta.total_pages.toString())}
                 </div>
                 <Button
                   variant="outline"
@@ -411,7 +423,7 @@ const Users = () => {
                   onClick={() => setCurrentPage(prev => Math.min(paginationMeta.total_pages, prev + 1))}
                   disabled={paginationMeta.page === paginationMeta.total_pages || isLoading}
                 >
-                  Siguiente
+                  {t('next')}
                 </Button>
               </div>
             </div>
@@ -443,7 +455,7 @@ const Users = () => {
                 resetForm();
               }}
               isLoading={updateMutation.isPending}
-              submitLabel="Guardar Cambios"
+              submitLabel={t('save')}
               showPassword={false}
             />
           </DialogContent>
@@ -483,80 +495,119 @@ const UserForm = ({
   isLoading,
   submitLabel,
   showPassword,
-}: UserFormProps) => (
-  <div className="space-y-4">
-    <div className="space-y-2">
-      <Label htmlFor="name">Nombre Completo</Label>
-      <Input
-        id="name"
-        value={formData.full_name}
-        onChange={(e) =>
-          setFormData({ ...formData, full_name: e.target.value })
-        }
-        placeholder="Ej: Juan Pérez"
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="phone">Teléfono</Label>
-      <Input
-        id="phone"
-        type="tel"
-        value={formData.phone}
-        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-        placeholder="Ej: +52 555 1234567"
-      />
-    </div>
-    <div className="space-y-2">
-      <Label htmlFor="email">Correo de la Empresa</Label>
-      <Input
-        id="email"
-        type="email"
-        value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        placeholder="Ej: usuario@empresa.com"
-      />
-    </div>
-    {showPassword && (
+}: UserFormProps) => {
+  const { t } = useLanguage();
+  return (
+    <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
+        <Label htmlFor="name">{t('full_name')}</Label>
         <Input
-          id="password"
-          type="password"
-          value={formData.password}
+          id="name"
+          value={formData.full_name}
           onChange={(e) =>
-            setFormData({ ...formData, password: e.target.value })
+            setFormData({ ...formData, full_name: e.target.value })
           }
-          placeholder="Mínimo 8 caracteres"
+          placeholder="Ej: Juan Pérez"
         />
       </div>
-    )}
-    <div className="space-y-2">
-      <Label htmlFor="role">Rol</Label>
-      <Select
-        value={formData.role}
-        onValueChange={(value) => setFormData({ ...formData, role: value })}
-      >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="admin">Admin</SelectItem>
-          <SelectItem value="engineer">Engineer</SelectItem>
-          <SelectItem value="inspector">Inspector</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="space-y-2">
+        <Label htmlFor="phone">{t('phone')}</Label>
+        <div className="flex gap-2">
+          <Select
+            defaultValue="+521"
+            value={['+521', '+1', '+34', '+54', '+57', '+56', '+51'].find(c => formData.phone.startsWith(c)) || "+521"}
+            onValueChange={(value) => {
+              // Find current code to remove it correctly
+              const currentCode = ['+521', '+1', '+34', '+54', '+57', '+56', '+51'].find(c => formData.phone.startsWith(c)) || "+521";
+              const currentNumber = formData.phone.startsWith(currentCode)
+                ? formData.phone.slice(currentCode.length)
+                : formData.phone;
+              setFormData({ ...formData, phone: `${value}${currentNumber}` });
+            }}
+          >
+            <SelectTrigger className="w-[110px]">
+              <SelectValue placeholder="Code" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="+521">🇲🇽 +521</SelectItem>
+              <SelectItem value="+1">🇺🇸 +1</SelectItem>
+              <SelectItem value="+34">🇪🇸 +34</SelectItem>
+              <SelectItem value="+54">🇦🇷 +54</SelectItem>
+              <SelectItem value="+57">🇨🇴 +57</SelectItem>
+              <SelectItem value="+56">🇨🇱 +56</SelectItem>
+              <SelectItem value="+51">🇵🇪 +51</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            id="phone"
+            type="tel"
+            value={(() => {
+              const code = ['+521', '+1', '+34', '+54', '+57', '+56', '+51'].find(c => formData.phone.startsWith(c)) || "+521";
+              return formData.phone.startsWith(code) ? formData.phone.slice(code.length) : formData.phone;
+            })()}
+            onChange={(e) => {
+              const code = ['+521', '+1', '+34', '+54', '+57', '+56', '+51'].find(c => formData.phone.startsWith(c)) || "+521";
+              // Remove spaces and hyphens from input immediately
+              const cleanedValue = e.target.value.replace(/[\s-]/g, '');
+              setFormData({ ...formData, phone: `${code}${cleanedValue}` });
+            }}
+            placeholder="555 1234567"
+            className="flex-1"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="email">{t('company_email')}</Label>
+        <Input
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="Ej: usuario@empresa.com"
+        />
+      </div>
+      {showPassword && (
+        <div className="space-y-2">
+          <Label htmlFor="password">{t('password')}</Label>
+          <Input
+            id="password"
+            type="password"
+            value={formData.password}
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
+            placeholder="Mínimo 8 caracteres"
+          />
+        </div>
+      )}
+      <div className="space-y-2">
+        <Label htmlFor="role">{t('role')}</Label>
+        <Select
+          value={formData.role}
+          onValueChange={(value) => setFormData({ ...formData, role: value })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="engineer">Engineer</SelectItem>
+            <SelectItem value="inspector">Inspector</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex gap-2 pt-4">
+        <Button onClick={onSubmit} className="flex-1" disabled={isLoading}>
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          {submitLabel}
+        </Button>
+        <Button variant="outline" onClick={onCancel} className="flex-1">
+          {t('cancel')}
+        </Button>
+      </div>
     </div>
-    <div className="flex gap-2 pt-4">
-      <Button onClick={onSubmit} className="flex-1" disabled={isLoading}>
-        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-        {submitLabel}
-      </Button>
-      <Button variant="outline" onClick={onCancel} className="flex-1">
-        Cancelar
-      </Button>
-    </div>
-  </div>
-);
+  )
+};
 
 const StatCard = ({ title, count }: { title: string; count: number }) => (
   <Card>

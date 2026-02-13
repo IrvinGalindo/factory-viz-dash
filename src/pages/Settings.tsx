@@ -5,16 +5,18 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Settings as SettingsIcon, Bell, Shield, Database, Palette } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Settings as SettingsIcon, Bell, Shield, Database, Palette, Languages } from 'lucide-react';
+import { toast } from "sonner";
+import { useTheme } from "@/components/theme-provider";
+import { useLanguage } from "@/components/language-provider";
 
 const Settings = () => {
-  const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
 
-  const handleSaveSettings = () => {
-    toast({
-      title: "Configuración guardada",
-      description: "Los cambios han sido guardados exitosamente"
+  const handleSave = () => {
+    toast.success(t('config_saved'), {
+      description: t('config_saved_desc'),
     });
   };
 
@@ -23,8 +25,8 @@ const Settings = () => {
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configuración</h1>
-          <p className="text-muted-foreground">Administra la configuración del sistema</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('settings')}</h1>
+          <p className="text-muted-foreground">{t('general')}</p>
         </div>
 
         {/* General Settings */}
@@ -32,23 +34,23 @@ const Settings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <SettingsIcon className="h-5 w-5" />
-              Configuración General
+              {t('general')}
             </CardTitle>
-            <CardDescription>Configuración básica del sistema</CardDescription>
+            <CardDescription>{t('general_desc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="company-name">Nombre de la Empresa</Label>
+                <Label htmlFor="company-name">{t('company_name')}</Label>
                 <Input
                   id="company-name"
                   defaultValue="Sistema Industrial"
-                  placeholder="Nombre de la empresa"
+                  placeholder={t('company_name_placeholder')}
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="timezone">Zona Horaria</Label>
+                <Label htmlFor="timezone">{t('timezone')}</Label>
                 <Select defaultValue="america-mexico">
                   <SelectTrigger>
                     <SelectValue />
@@ -63,7 +65,7 @@ const Settings = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="refresh-interval">Intervalo de Actualización (segundos)</Label>
+              <Label htmlFor="refresh-interval">{t('refresh_interval')}</Label>
               <Input
                 id="refresh-interval"
                 type="number"
@@ -80,35 +82,35 @@ const Settings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              Notificaciones
+              {t('notifications')}
             </CardTitle>
-            <CardDescription>Configura las alertas y notificaciones del sistema</CardDescription>
+            <CardDescription>{t('notifications_desc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Alertas de Mantenimiento</Label>
-                <p className="text-sm text-muted-foreground">Recibir notificaciones cuando se requiera mantenimiento</p>
+                <Label>{t('maintenance_alerts')}</Label>
+                <p className="text-sm text-muted-foreground">{t('maintenance_alerts_desc')}</p>
               </div>
               <Switch defaultChecked />
             </div>
-            
+
             <Separator />
-            
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Alertas de Temperatura</Label>
-                <p className="text-sm text-muted-foreground">Notificar cuando la temperatura exceda los límites</p>
+                <Label>{t('temperature_alerts')}</Label>
+                <p className="text-sm text-muted-foreground">{t('temperature_alerts_desc')}</p>
               </div>
               <Switch defaultChecked />
             </div>
-            
+
             <Separator />
-            
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Reportes Diarios</Label>
-                <p className="text-sm text-muted-foreground">Enviar resumen diario por correo electrónico</p>
+                <Label>{t('daily_reports')}</Label>
+                <p className="text-sm text-muted-foreground">{t('daily_reports_desc')}</p>
               </div>
               <Switch />
             </div>
@@ -120,13 +122,13 @@ const Settings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Seguridad
+              {t('security')}
             </CardTitle>
-            <CardDescription>Configuración de seguridad y acceso</CardDescription>
+            <CardDescription>{t('security_desc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="session-timeout">Tiempo de Sesión (minutos)</Label>
+              <Label htmlFor="session-timeout">{t('session_timeout')}</Label>
               <Input
                 id="session-timeout"
                 type="number"
@@ -138,18 +140,18 @@ const Settings = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Autenticación de Dos Factores</Label>
-                <p className="text-sm text-muted-foreground">Requerir verificación adicional para el acceso</p>
+                <Label>{t('2fa')}</Label>
+                <p className="text-sm text-muted-foreground">{t('2fa_desc')}</p>
               </div>
               <Switch />
             </div>
-            
+
             <Separator />
-            
+
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Registro de Auditoría</Label>
-                <p className="text-sm text-muted-foreground">Mantener registro de todas las acciones del usuario</p>
+                <Label>{t('audit_log')}</Label>
+                <p className="text-sm text-muted-foreground">{t('audit_log_desc')}</p>
               </div>
               <Switch defaultChecked />
             </div>
@@ -161,22 +163,22 @@ const Settings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              Configuración de API
+              {t('api')}
             </CardTitle>
-            <CardDescription>Configuración de conexiones externas</CardDescription>
+            <CardDescription>{t('api_desc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="api-endpoint">Endpoint de la API</Label>
+              <Label htmlFor="api-endpoint">{t('api_endpoint')}</Label>
               <Input
                 id="api-endpoint"
                 defaultValue="https://api.empresa.com/v1"
-                placeholder="URL del endpoint de la API"
+                placeholder={t('api_endpoint_placeholder')}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="api-timeout">Timeout de API (segundos)</Label>
+              <Label htmlFor="api-timeout">{t('api_timeout')}</Label>
               <Input
                 id="api-timeout"
                 type="number"
@@ -188,8 +190,8 @@ const Settings = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Reintentos Automáticos</Label>
-                <p className="text-sm text-muted-foreground">Reintentar automáticamente las llamadas fallidas</p>
+                <Label>{t('auto_retries')}</Label>
+                <p className="text-sm text-muted-foreground">{t('auto_retries_desc')}</p>
               </div>
               <Switch defaultChecked />
             </div>
@@ -201,28 +203,28 @@ const Settings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              Apariencia
+              {t('appearance')}
             </CardTitle>
-            <CardDescription>Personaliza la apariencia del sistema</CardDescription>
+            <CardDescription>{t('appearance_desc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="theme">Tema</Label>
-              <Select defaultValue="system">
+              <Label htmlFor="theme">{t('theme')}</Label>
+              <Select value={theme} onValueChange={(value: "light" | "dark" | "system") => setTheme(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">Claro</SelectItem>
-                  <SelectItem value="dark">Oscuro</SelectItem>
-                  <SelectItem value="system">Sistema</SelectItem>
+                  <SelectItem value="light">{t('light')}</SelectItem>
+                  <SelectItem value="dark">{t('dark')}</SelectItem>
+                  <SelectItem value="system">{t('system')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="language">Idioma</Label>
-              <Select defaultValue="es">
+              <Label htmlFor="language">{t('language')}</Label>
+              <Select value={language} onValueChange={(value: "es" | "en") => setLanguage(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -237,8 +239,8 @@ const Settings = () => {
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <Button onClick={handleSaveSettings} size="lg">
-            Guardar Configuración
+          <Button onClick={handleSave} size="lg">
+            {t('save_configuration')}
           </Button>
         </div>
       </div>

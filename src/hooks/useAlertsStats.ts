@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { fetchAlerts } from "@/services/spcApi";
+import { useLanguage } from "@/components/language-provider";
+import { logger } from "@/utils/logger";
 
 export const useAlertsStats = (trigger?: any) => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -27,7 +31,8 @@ export const useAlertsStats = (trigger?: any) => {
           resolved: resolvedRes.pagination?.total || 0,
         });
       } catch (error) {
-        console.error("Error loading alert stats:", error);
+        logger.error("Error loading alert stats:", error);
+        toast.error(t('error_loading_stats'));
       }
     };
 

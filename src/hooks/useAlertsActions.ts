@@ -3,6 +3,8 @@ import { Alert, acknowledgeAlert, resolveAlert } from "@/services/spcApi";
 import { useGlobalAlertsContext } from "@/hooks/useGlobalAlerts";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { logger } from "@/utils/logger";
+import { useLanguage } from "@/components/language-provider";
 
 export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) => void) => {
   const [processingAlertId, setProcessingAlertId] = useState<string | null>(null);
@@ -10,6 +12,7 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
   const [resolveNotes, setResolveNotes] = useState<Record<string, string>>({});
   const { sendMessage } = useGlobalAlertsContext();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   // Get the user's display name, fallback to 'operator' if not available
   const userName = user?.full_name || 'operator';
@@ -57,7 +60,7 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
       try {
         const alertToAcknowledge = alerts.find((a) => a.alert_id === alertId);
 
-        const response = await acknowledgeAlert(alertId, userName, comment);
+        const response = await acknowledgeAlert(alertId, userName, comment.trim());
         const updatedAlert = response.data; // Extract from SuccessResponse
 
         if (alertToAcknowledge) {
@@ -86,7 +89,7 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
         toast.success("Alerta reconocida correctamente");
       } catch (err) {
         console.error("Error acknowledging alert:", err);
-        toast.error("Error al reconocer la alerta");
+        toast.error(err instanceof Error ? err.message : "Error al reconocer la alerta");
       } finally {
         setProcessingAlertId(null);
       }
@@ -105,8 +108,8 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
       setProcessingAlertId(alertId);
       try {
         // Send to API with the notes
-        const response = await resolveAlert(alertId, userName, note);
-        const updatedAlert = response.data; // Extract from SuccessResponse
+        const response = await resolveAlert(alertId, userName, note.trim());
+        const updatedAlert = response; // Response is the Alert object directly
 
         setAlerts(
           alerts.map((a) =>
@@ -127,10 +130,12 @@ export const useAlertsActions = (alerts: Alert[], setAlerts: (alerts: Alert[]) =
           return updated;
         });
 
-        toast.success("Alerta resuelta correctamente");
+        toast.success(t('alert_resolved'), {
+          description: t('success'),
+        });
       } catch (err) {
-        console.error("Error resolving alert:", err);
-        toast.error("Error al resolver la alerta");
+        logger.error("Error resolving alert:", err);
+        toast.error(err instanceof Error ? err.message : "Error al resolver la alerta");
       } finally {
         setProcessingAlertId(null);
       }

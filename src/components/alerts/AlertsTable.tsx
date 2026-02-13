@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useLanguage } from "@/components/language-provider";
 
 interface AlertsTableProps {
   alerts: Alert[];
@@ -33,23 +34,6 @@ const getMachineName = (
   return machine?.line || machineId;
 };
 
-const formatAlertTitle = (alert: Alert): string => {
-  const value = alert.value?.toFixed(4);
-
-  if (alert.alert_type === "below_lower_limit") {
-    return `El valor ${value} debajo del límite inferior`;
-  } else if (alert.alert_type === "above_upper_limit") {
-    return `El valor ${value} supera el límite superior`;
-  } else if (alert.alert_type === "out_of_spec") {
-    return `El valor ${value} fuera de especificación`;
-  } else if (alert.alert_type === "out_of_control") {
-    return `El valor ${value} fuera de control`;
-  } else if (alert.alert_type === "trend") {
-    return `Tendencia detectada en valor ${value}`;
-  }
-  return `Alerta - ${alert.alert_type}`;
-};
-
 export const AlertsTable = memo(
   ({
     alerts,
@@ -62,16 +46,35 @@ export const AlertsTable = memo(
     onAcknowledge,
     onResolve,
   }: AlertsTableProps) => {
+    const { t } = useLanguage();
+
+    const formatAlertTitle = (alert: Alert): string => {
+      const value = alert.value?.toFixed(4);
+
+      if (alert.alert_type === "below_lower_limit") {
+        return t('alert_below_lower').replace('{value}', value);
+      } else if (alert.alert_type === "above_upper_limit") {
+        return t('alert_above_upper').replace('{value}', value);
+      } else if (alert.alert_type === "out_of_spec") {
+        return t('alert_out_of_spec').replace('{value}', value);
+      } else if (alert.alert_type === "out_of_control") {
+        return t('alert_out_of_control').replace('{value}', value);
+      } else if (alert.alert_type === "trend") {
+        return t('alert_trend').replace('{value}', value);
+      }
+      return t('alert_default').replace('{type}', alert.alert_type);
+    };
+
     return (
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[300px]">Alerta</TableHead>
-            <TableHead>Máquina</TableHead>
-            <TableHead>Severidad</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
+            <TableHead className="w-[300px]">{t('alert')}</TableHead>
+            <TableHead>{t('machine')}</TableHead>
+            <TableHead>{t('severity')}</TableHead>
+            <TableHead>{t('status')}</TableHead>
+            <TableHead>{t('date')}</TableHead>
+            <TableHead className="text-right">{t('actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -84,11 +87,11 @@ export const AlertsTable = memo(
                     {formatAlertTitle(alert)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {alert.item} - {alert.column_name} | Proceso:{" "}
+                    {alert.item} - {alert.column_name} | {t('process')}:{" "}
                     {alert.process_number}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Nominal: {alert.nominal?.toFixed(4)} | Límites: [
+                    {t('nominal')}: {alert.nominal?.toFixed(4)} | {t('limits')}: [
                     {alert.lower_limit?.toFixed(4)}, {alert.upper_limit?.toFixed(4)}
                     ]
                   </p>

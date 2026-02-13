@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Bell, Clock, Check, CheckCircle } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 interface StatsItem {
   icon: React.ReactNode;
@@ -18,6 +19,7 @@ interface AlertsStatsProps {
 
 export const AlertsStats = memo(
   ({ total, pending, acknowledged, resolved }: AlertsStatsProps) => {
+    const { t } = useLanguage();
     const stats: StatsItem[] = [
       {
         icon: <Bell className="h-5 w-5 text-muted-foreground" />,
@@ -27,19 +29,19 @@ export const AlertsStats = memo(
       },
       {
         icon: <Clock className="h-5 w-5 text-orange-500" />,
-        label: "Pendientes",
+        label: t('pending'),
         value: pending,
         color: "bg-orange-100 dark:bg-orange-900/30",
       },
       {
         icon: <Check className="h-5 w-5 text-blue-500" />,
-        label: "Reconocidas",
+        label: t('acknowledged'),
         value: acknowledged,
         color: "bg-blue-100 dark:bg-blue-900/30",
       },
       {
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-        label: "Resueltas",
+        label: t('resolved'),
         value: resolved,
         color: "bg-green-100 dark:bg-green-900/30",
       },

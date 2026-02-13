@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BarChart3, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { useLanguage } from '@/components/language-provider';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -14,7 +15,9 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { t } = useLanguage();
+
+
 
   // Redirect if already logged in
   if (user) {
@@ -25,10 +28,8 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast({
-        title: 'Error',
-        description: 'Ingresa tu correo y contraseña',
-        variant: 'destructive',
+      toast.error(t('error'), {
+        description: t('enter_email_password'),
       });
       return;
     }
@@ -38,10 +39,8 @@ const Login = () => {
     setIsLoading(false);
 
     if (error) {
-      toast({
-        title: 'Error de autenticación',
-        description: error.message || 'Correo o contraseña incorrectos',
-        variant: 'destructive',
+      toast.error(t('login_error'), {
+        description: error.message || t('login_error_desc'),
       });
     } else {
       navigate('/', { replace: true });
@@ -57,13 +56,13 @@ const Login = () => {
               <BarChart3 className="h-10 w-10" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Sistema Industrial</CardTitle>
-          <CardDescription>Inicia sesión para acceder al sistema</CardDescription>
+          <CardTitle className="text-2xl">{t('welcome_title')}</CardTitle>
+          <CardDescription>{t('welcome_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -74,7 +73,7 @@ const Login = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="password">{t('password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -88,10 +87,10 @@ const Login = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Iniciando sesión...
+                  {t('login_loading')}
                 </>
               ) : (
-                'Iniciar Sesión'
+                t('login_button')
               )}
             </Button>
           </form>

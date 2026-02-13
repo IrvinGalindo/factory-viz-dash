@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit, Trash2, Settings, QrCode } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   fetchMachines as apiFetchMachines,
   createMachine as apiCreateMachine,
@@ -14,9 +14,10 @@ import {
   deleteMachine as apiDeleteMachine,
   Machine,
 } from '@/services/spcApi';
+import { useLanguage } from '@/components/language-provider';
 
 const Machines = () => {
-  const { toast } = useToast();
+  const { t } = useLanguage();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [machines, setMachines] = useState<Machine[]>([]);
@@ -44,10 +45,8 @@ const Machines = () => {
       setMachines(data || []);
     } catch (error) {
       console.error('Error fetching machines:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las máquinas",
-        variant: "destructive"
+      toast.error(t('error'), {
+        description: t('error'),
       });
     } finally {
       setLoading(false);
@@ -56,10 +55,8 @@ const Machines = () => {
 
   const handleCreateMachine = async () => {
     if (!formData.cmm_name || !formData.line || !formData.process) {
-      toast({
-        title: "Error",
-        description: "Todos los campos son obligatorios",
-        variant: "destructive"
+      toast.error(t('error'), {
+        description: t('required_fields'),
       });
       return;
     }
@@ -75,26 +72,25 @@ const Machines = () => {
       setFormData({ cmm_name: '', line: '', process: '' });
       setIsCreateDialogOpen(false);
 
-      toast({
-        title: "Máquina creada",
-        description: `Se ha creado la máquina ${formData.cmm_name} exitosamente`
+      setIsCreateDialogOpen(false);
+      resetForm();
+
+      toast.success(t('machine_created'), {
+        description: t('success')
       });
     } catch (error) {
       console.error('Error creating machine:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo crear la máquina",
-        variant: "destructive"
+      // Use the error message from the API if available (handled by handleApiError in api wrapper, but here we catch it)
+      toast.error(t('error'), {
+        description: error instanceof Error ? error.message : t('error_create_machine'),
       });
     }
   };
 
   const handleEditMachine = async () => {
     if (!editingMachine || !formData.cmm_name || !formData.line || !formData.process) {
-      toast({
-        title: "Error",
-        description: "Todos los campos son obligatorios",
-        variant: "destructive"
+      toast.error(t('error'), {
+        description: t('required_fields'),
       });
       return;
     }
@@ -114,16 +110,16 @@ const Machines = () => {
       setEditingMachine(null);
       setIsEditDialogOpen(false);
 
-      toast({
-        title: "Máquina actualizada",
-        description: "La máquina se ha actualizado exitosamente"
+      setEditingMachine(null);
+      setIsEditDialogOpen(false);
+
+      toast.success(t('machine_updated'), {
+        description: t('success')
       });
     } catch (error) {
       console.error('Error updating machine:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la máquina",
-        variant: "destructive"
+      toast.error(t('error'), {
+        description: error instanceof Error ? error.message : t('error_update_machine'),
       });
     }
   };
@@ -132,16 +128,14 @@ const Machines = () => {
     try {
       await apiDeleteMachine(machineId);
       setMachines(machines.filter(machine => machine.machine_id !== machineId));
-      toast({
-        title: "Máquina eliminada",
-        description: "La máquina ha sido eliminada exitosamente"
+      setMachines(machines.filter(machine => machine.machine_id !== machineId));
+      toast.success(t('machine_deleted'), {
+        description: t('success')
       });
     } catch (error) {
       console.error('Error deleting machine:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la máquina",
-        variant: "destructive"
+      toast.error(t('error'), {
+        description: error instanceof Error ? error.message : t('error_delete_machine'),
       });
     }
   };
@@ -166,7 +160,7 @@ const Machines = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Cargando máquinas...</p>
+          <p className="mt-4 text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     );
@@ -178,22 +172,22 @@ const Machines = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Gestión de Máquinas</h1>
-            <p className="text-muted-foreground">Administra las máquinas del sistema</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t('machines_title')}</h1>
+            <p className="text-muted-foreground">{t('machines_desc')}</p>
           </div>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" onClick={resetForm}>
                 <Plus className="h-4 w-4" />
-                Crear Máquina
+                {t('create_machine')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Crear Nueva Máquina</DialogTitle>
+                <DialogTitle>{t('create_machine')}</DialogTitle>
                 <DialogDescription>
-                  Completa los datos de la nueva máquina
+                  {t('machines_desc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -232,7 +226,7 @@ const Machines = () => {
 
                 <div className="flex gap-2 pt-4">
                   <Button onClick={handleCreateMachine} className="flex-1">
-                    Crear Máquina
+                    {t('create')}
                   </Button>
                   <Button
                     variant="outline"
@@ -242,7 +236,7 @@ const Machines = () => {
                     }}
                     className="flex-1"
                   >
-                    Cancelar
+                    {t('cancel')}
                   </Button>
                 </div>
               </div>
@@ -254,9 +248,9 @@ const Machines = () => {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Editar Máquina</DialogTitle>
+              <DialogTitle>{t('edit_machine')}</DialogTitle>
               <DialogDescription>
-                Modifica los datos de la máquina
+                {t('machines_desc')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -295,7 +289,7 @@ const Machines = () => {
 
               <div className="flex gap-2 pt-4">
                 <Button onClick={handleEditMachine} className="flex-1">
-                  Actualizar
+                  {t('update')}
                 </Button>
                 <Button
                   variant="outline"
@@ -305,7 +299,7 @@ const Machines = () => {
                   }}
                   className="flex-1"
                 >
-                  Cancelar
+                  {t('cancel')}
                 </Button>
               </div>
             </div>
@@ -316,7 +310,7 @@ const Machines = () => {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Máquinas</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('total_machines')}</CardTitle>
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -326,7 +320,7 @@ const Machines = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Con Línea</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('with_line')}</CardTitle>
               <QrCode className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -338,7 +332,7 @@ const Machines = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Con Proceso</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('with_process')}</CardTitle>
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -352,25 +346,25 @@ const Machines = () => {
         {/* Machines Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Máquinas</CardTitle>
-            <CardDescription>Todas las máquinas registradas en el sistema</CardDescription>
+            <CardTitle>{t('machine_list')}</CardTitle>
+            <CardDescription>{t('machine_list_desc')}</CardDescription>
           </CardHeader>
           <CardContent>
             {machines.length === 0 ? (
               <div className="text-center py-8">
                 <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-lg font-medium text-muted-foreground">No hay máquinas registradas</p>
-                <p className="text-muted-foreground">Crea la primera máquina para comenzar</p>
+                <p className="text-lg font-medium text-muted-foreground">{t('no_machines')}</p>
+                <p className="text-muted-foreground">{t('create_first_machine')}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>CMM</TableHead>
-                    <TableHead>Línea</TableHead>
-                    <TableHead>Proceso</TableHead>
-                    <TableHead>Fecha de Creación</TableHead>
-                    <TableHead>Acciones</TableHead>
+                    <TableHead>{t('cmm')}</TableHead>
+                    <TableHead>{t('line')}</TableHead>
+                    <TableHead>{t('process')}</TableHead>
+                    <TableHead>{t('creation_date')}</TableHead>
+                    <TableHead>{t('actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -379,7 +373,7 @@ const Machines = () => {
                     .map((machine) => (
                       <TableRow key={machine.machine_id}>
                         <TableCell className="font-medium">
-                          {machine.cmm_name || 'Sin nombre'}
+                          {machine.cmm_name || t('unknown_name')}
                         </TableCell>
                         <TableCell>
                           {machine.line || '-'}
@@ -420,7 +414,10 @@ const Machines = () => {
         {machines.length > itemsPerPage && (
           <div className="flex items-center justify-between px-2">
             <div className="text-sm text-muted-foreground">
-              Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, machines.length)} de {machines.length} máquinas
+              {t('showing_machines')
+                .replace('{start}', (((currentPage - 1) * itemsPerPage) + 1).toString())
+                .replace('{end}', Math.min(currentPage * itemsPerPage, machines.length).toString())
+                .replace('{total}', machines.length.toString())}
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -429,10 +426,12 @@ const Machines = () => {
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
-                Anterior
+                {t('previous')}
               </Button>
               <div className="text-sm">
-                Página {currentPage} de {Math.ceil(machines.length / itemsPerPage)}
+                {t('page_of')
+                  .replace('{current}', currentPage.toString())
+                  .replace('{total}', Math.ceil(machines.length / itemsPerPage).toString())}
               </div>
               <Button
                 variant="outline"
@@ -440,7 +439,7 @@ const Machines = () => {
                 onClick={() => setCurrentPage(prev => Math.min(Math.ceil(machines.length / itemsPerPage), prev + 1))}
                 disabled={currentPage === Math.ceil(machines.length / itemsPerPage)}
               >
-                Siguiente
+                {t('next')}
               </Button>
             </div>
           </div>

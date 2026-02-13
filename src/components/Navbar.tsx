@@ -4,17 +4,19 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart3, Users, Settings, LogOut, Cog, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/components/language-provider';
 
 const Navbar = () => {
   const location = useLocation();
   const { profile, appRole, signOut, canAccess } = useAuth();
+  const { t } = useLanguage();
 
   const allNavItems = [
-    { to: '/', label: 'Dashboard', icon: BarChart3 },
-    { to: '/alerts', label: 'Alertas', icon: Bell },
-    { to: '/users', label: 'Gestión de Usuarios', icon: Users },
-    { to: '/machines', label: 'Gestión de Máquinas', icon: Cog },
-    { to: '/settings', label: 'Configuración', icon: Settings },
+    { to: '/', label: t('dashboard'), icon: BarChart3 },
+    { to: '/alerts', label: t('alerts'), icon: Bell },
+    { to: '/users', label: t('users'), icon: Users },
+    { to: '/machines', label: t('machines'), icon: Cog },
+    { to: '/settings', label: t('settings'), icon: Settings },
   ];
 
   const navItems = allNavItems.filter(item => canAccess(item.to));
@@ -74,7 +76,7 @@ const Navbar = () => {
             <Badge variant="outline">{getRoleLabel(appRole)}</Badge>
             <Button variant="ghost" size="sm" className="gap-2" onClick={signOut}>
               <LogOut className="h-4 w-4" />
-              Cerrar Sesión
+              {t('logout')}
             </Button>
           </div>
         </div>

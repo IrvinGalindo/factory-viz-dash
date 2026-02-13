@@ -2,6 +2,7 @@ import { useCallback, createContext, useContext, useRef, useState, useEffect, Re
 import { toast } from "sonner";
 import { useAlertSound } from "@/hooks/useAlertSound";
 import { Alert, getAlertsWebSocketUrl } from "@/services/spcApi";
+import { logger } from "@/utils/logger";
 
 interface GlobalAlertsContextType {
   isConnected: boolean;
@@ -45,7 +46,7 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
       alert.status === "acknowledged" ||
       alert.status === "resolved"
     ) {
-      console.log("Alerta modificada ignorada:", alert);
+      logger.debug("Alerta modificada ignorada:", alert);
       return;
     }
 
@@ -91,7 +92,7 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
     const upperLimit = typeof alert.upper_limit === 'number' ? alert.upper_limit.toFixed(4) : "N/A";
     const description = `Valor: ${value} | Nominal: ${nominal} | Desviación: ${deviation} | Límites: [${lowerLimit}, ${upperLimit}]`;
 
-    console.log("✅ Mostrando toast para alerta válida:", { type: alert.alert_type, title, description });
+    logger.info("✅ Mostrando toast para alerta válida:", { type: alert.alert_type, title, description });
     toast.error(title, {
       description: description,
       duration: 10000,
@@ -111,11 +112,11 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
 
     try {
       const wsUrl = getAlertsWebSocketUrl();
-      console.log("🔌 [Global] Conectando al WebSocket de alertas:", wsUrl);
+      logger.info("🔌 [Global] Conectando al WebSocket de alertas:", wsUrl);
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log("✅ [Global] WebSocket de alertas conectado (Session ID:", sessionId, ")");
+        logger.info(`✅ [Global] WebSocket de alertas conectado (Session ID: ${sessionId})`);
         setIsConnected(true);
         setConnectionError(null);
       };
@@ -123,17 +124,17 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          // console.log("Mensaje WebSocket recibido:", message);
+          // logger.debug("Mensaje WebSocket recibido:", message);
 
           const allowedTypes = ["alert", "connection", "pong"];
           if (!allowedTypes.includes(message.type)) {
-            // console.warn("Mensaje WebSocket ignorado: Tipo no permitido", message.type);
+            // logger.warn("Mensaje WebSocket ignorado: Tipo no permitido", message.type);
             return;
           }
 
           // Check for self-sent messages (via sender_id or sessionId) at top level
           if (message.sender_id === sessionId || message.sessionId === sessionId) {
-            //  console.log("🛑 Ignorando mensaje enviado por esta misma sesión:", sessionId);
+            //  logger.debug("🛑 Ignorando mensaje enviado por esta misma sesión:", sessionId);
             return;
           }
 
@@ -145,21 +146,21 @@ export const GlobalAlertsProvider = ({ children }: GlobalAlertsProviderProps) =>
               try {
                 alertData = JSON.parse(alertData);
               } catch (e) {
-                console.error("Error parsing alert data string:", e);
+                logger.error("Error parsing alert data string:", e);
               }
             }
             // Use Stringify to force full visibility in console text
-            console.log("🔍 [Global] Processed alert data (JSON):", JSON.stringify(alertData, null, 2));
+            logger.debug("🔍 [Global] Processed alert data (JSON):", JSON.stringify(alertData, null, 2));
 
             // Handle double nesting (message.data.data)
             if (alertData && alertData.data && typeof alertData.data === 'object') {
-              console.log("📦 [Global] Desempaquetando data anidada:", alertData.data);
+              logger.debug("📦 [Global] Desempaquetando data anidada:", alertData.data);
               alertData = alertData.data;
             }
 
             // Check for self-sent messages inside data object
             if (alertData.sender_id === sessionId || alertData.sessionId === sessionId) {
-              console.log("🛑 Ignorando mensaje (data) enviado por esta misma sesión:", sessionId);
+              logger.debug("🛑 Ignorando mensaje (data) enviado por esta misma sesión:", sessionId);
               return;
             }
 

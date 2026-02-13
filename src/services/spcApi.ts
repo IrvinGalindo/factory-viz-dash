@@ -1,4 +1,19 @@
+import { logger } from "@/utils/logger";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
+
+const handleApiError = async (response: Response, defaultMessage: string): Promise<never> => {
+  let errorMessage = defaultMessage;
+  try {
+    const errorData = await response.json();
+    if (errorData.message) errorMessage = errorData.message;
+    else if (errorData.detail) errorMessage = errorData.detail;
+    else if (errorData.error) errorMessage = errorData.error;
+  } catch (e) {
+    // If parsing fails, use the default message or the status text
+    errorMessage = `${defaultMessage}: ${response.statusText}`;
+  }
+  throw new Error(errorMessage);
+};
 
 // Standard API Response Types
 export interface SuccessResponse<T = any> {
@@ -97,7 +112,7 @@ export interface UpdateMachineData {
 export const fetchMachines = async (): Promise<Machine[]> => {
   const response = await fetch(`${API_BASE_URL}/machines`);
   if (!response.ok) {
-    throw new Error("Error al obtener las máquinas");
+    await handleApiError(response, "Error al obtener las máquinas");
   }
   const data = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -107,7 +122,7 @@ export const fetchMachines = async (): Promise<Machine[]> => {
 export const fetchMachine = async (machineId: string): Promise<Machine> => {
   const response = await fetch(`${API_BASE_URL}/machines/${machineId}`);
   if (!response.ok) {
-    throw new Error("Error al obtener la máquina");
+    await handleApiError(response, "Error al obtener la máquina");
   }
   const data = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -123,7 +138,7 @@ export const createMachine = async (data: CreateMachineData): Promise<Machine> =
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error("Error al crear la máquina");
+    await handleApiError(response, "Error al crear la máquina");
   }
   const responseData = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -142,7 +157,7 @@ export const updateMachine = async (
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error("Error al actualizar la máquina");
+    await handleApiError(response, "Error al actualizar la máquina");
   }
   const responseData = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -154,7 +169,7 @@ export const deleteMachine = async (machineId: string): Promise<void> => {
     method: "DELETE",
   });
   if (!response.ok) {
-    throw new Error("Error al eliminar la máquina");
+    await handleApiError(response, "Error al eliminar la máquina");
   }
   // No return value for DELETE operations
 };
@@ -164,7 +179,7 @@ export const deleteMachine = async (machineId: string): Promise<void> => {
 export const fetchSPCMachines = async (): Promise<Array<{ machine_id: string; line: string; cmm_name: string }>> => {
   const response = await fetch(`${API_BASE_URL}/spc/machines`);
   if (!response.ok) {
-    throw new Error("Error al obtener las máquinas SPC");
+    await handleApiError(response, "Error al obtener las máquinas SPC");
   }
   const data = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -176,7 +191,7 @@ export const fetchProcessNumbers = async (machineId: string): Promise<string[]> 
     `${API_BASE_URL}/spc/processes?machine_id=${encodeURIComponent(machineId)}`
   );
   if (!response.ok) {
-    throw new Error("Error al obtener los procesos");
+    await handleApiError(response, "Error al obtener los procesos");
   }
   const data = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -220,7 +235,7 @@ export const fetchSPCChartData = async (
     if (response.status === 404) {
       return null;
     }
-    throw new Error("Error al obtener los datos SPC");
+    await handleApiError(response, "Error al obtener los datos SPC");
   }
   // Return the full response with success, data, message structure
   return response.json();
@@ -253,7 +268,7 @@ export const addProcess = async (data: AddProcessData): Promise<{ message: strin
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    throw new Error("Error al agregar el proceso");
+    await handleApiError(response, "Error al agregar el proceso");
   }
   return response.json();
 };
@@ -306,7 +321,7 @@ export const fetchAlerts = async (
 
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error("Error al obtener las alertas");
+    await handleApiError(response, "Error al obtener las alertas");
   }
   // Return the full PaginatedResponse structure
   return response.json();
@@ -325,7 +340,7 @@ export const acknowledgeAlert = async (
     url += `&acknowledged_notes=${encodeURIComponent(notes)}`;
   }
 
-  console.log("🚀 Acknowledge URL:", url);
+  logger.debug("🚀 Acknowledge URL:", url);
 
   const response = await fetch(url, {
     method: "PATCH",
@@ -335,9 +350,7 @@ export const acknowledgeAlert = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("❌ Error response:", errorText);
-    throw new Error(`Error al reconocer la alerta: ${response.status}`);
+    await handleApiError(response, "Error al reconocer la alerta");
   }
   const data = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -357,7 +370,7 @@ export const resolveAlert = async (
     url += `&resolved_notes=${encodeURIComponent(resolvedNotes)}`;
   }
 
-  console.log("🚀 Resolve URL:", url);
+  logger.debug("🚀 Resolve URL:", url);
 
   const response = await fetch(url, {
     method: "PATCH",
@@ -367,9 +380,7 @@ export const resolveAlert = async (
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("❌ Error response:", errorText);
-    throw new Error(`Error al resolver la alerta: ${response.status}`);
+    await handleApiError(response, "Error al resolver la alerta");
   }
   const data = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -433,8 +444,7 @@ export const loginUser = async (email: string, password: string): Promise<UserLo
     body: JSON.stringify({ email, password }),
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: "Error de autenticación" }));
-    throw new Error(err.detail || "Correo o contraseña incorrectos");
+    await handleApiError(response, "Error de autenticación");
   }
   return response.json();
 };
@@ -455,7 +465,7 @@ export const refreshToken = async (refreshToken: string): Promise<UserLoginRespo
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
-  if (!response.ok) throw new Error("Error al refrescar token");
+  if (!response.ok) await handleApiError(response, "Error al refrescar token");
   return response.json();
 };
 
@@ -471,13 +481,13 @@ export const fetchUsers = async (
   if (role) url += `&role=${encodeURIComponent(role)}`;
   if (isActive !== undefined) url += `&is_active=${isActive}`;
   const response = await fetch(url);
-  if (!response.ok) throw new Error("Error al obtener usuarios");
+  if (!response.ok) await handleApiError(response, "Error al obtener usuarios");
   return response.json();
 };
 
 export const fetchUserStats = async (): Promise<UserStatsResponse> => {
   const response = await fetch(`${API_BASE_URL}/users/stats`);
-  if (!response.ok) throw new Error("Error al obtener estadísticas");
+  if (!response.ok) await handleApiError(response, "Error al obtener estadísticas");
   const data = await response.json();
   // Manejar el nuevo formato de respuesta
   return data.data || data;
@@ -496,8 +506,7 @@ export const createUser = async (data: {
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: "Error al crear usuario" }));
-    throw new Error(err.detail || "Error al crear usuario");
+    await handleApiError(response, "Error al crear usuario");
   }
   const responseData = await response.json();
   // Manejar el nuevo formato de respuesta
@@ -513,7 +522,7 @@ export const updateUser = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) throw new Error("Error al actualizar usuario");
+  if (!response.ok) await handleApiError(response, "Error al actualizar usuario");
   const responseData = await response.json();
   // Manejar el nuevo formato de respuesta
   return responseData.data || responseData;
@@ -523,7 +532,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
     method: "DELETE",
   });
-  if (!response.ok) throw new Error("Error al eliminar usuario");
+  if (!response.ok) await handleApiError(response, "Error al eliminar usuario");
 };
 
 export const updateUserStatus = async (
@@ -538,7 +547,7 @@ export const updateUserStatus = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!response.ok) throw new Error("Error al cambiar estado del usuario");
+  if (!response.ok) await handleApiError(response, "Error al cambiar estado del usuario");
 };
 
 export const updateUserPassword = async (userId: string, password: string): Promise<void> => {
@@ -547,7 +556,7 @@ export const updateUserPassword = async (userId: string, password: string): Prom
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password }),
   });
-  if (!response.ok) throw new Error("Error al cambiar contraseña");
+  if (!response.ok) await handleApiError(response, "Error al cambiar contraseña");
 };
 
 // WebSocket URL for real-time alerts

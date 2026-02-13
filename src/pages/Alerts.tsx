@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -19,8 +20,11 @@ import { AlertsStats } from "@/components/alerts/AlertsStats";
 import { AlertsFilters } from "@/components/alerts/AlertsFilters";
 import { AlertsTable } from "@/components/alerts/AlertsTable";
 import { AlertsPagination } from "@/components/alerts/AlertsPagination";
+import { useLanguage } from "@/components/language-provider";
+import { logger } from "@/utils/logger";
 
 const AlertsPage = () => {
+  const { t } = useLanguage();
   // State management
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [paginationMeta, setPaginationMeta] = useState({
@@ -85,7 +89,8 @@ const AlertsPage = () => {
         const data = await fetchSPCMachines();
         setMachines(data);
       } catch (err) {
-        console.error("Error loading machines:", err);
+        logger.error("Error loading machines:", err);
+        toast.error("Error al cargar las máquinas");
       }
     };
     loadMachines();
@@ -101,19 +106,23 @@ const AlertsPage = () => {
 
 
       // New PaginatedResponse structure: response.data contains the array directly
-      console.log("Alerts API Response:", response);
-      console.log("Alerts data array:", response.data);
+      logger.debug("Alerts API Response:", response);
+      logger.debug("Alerts data array:", response.data);
       const alertsData = response.data || [];
-      console.log("Setting alerts to:", alertsData);
+      logger.debug("Setting alerts to:", alertsData);
       setAlerts(alertsData);
 
       // Save pagination metadata from API
       if (response.pagination) {
         setPaginationMeta(response.pagination);
-        console.log("Pagination metadata:", response.pagination);
+        logger.debug("Pagination metadata:", response.pagination);
       }
     } catch (err) {
-      console.error("Error loading alerts:", err);
+      logger.error("Error loading alerts:", err);
+      // Evitar saturar con toasts si es un error de montaje inicial o cancelación
+      if (err instanceof Error && err.name !== 'AbortError') {
+        toast.error(err.message || "Error al cargar las alertas");
+      }
       setAlerts([]);
     } finally {
       setLoading(false);
@@ -126,9 +135,9 @@ const AlertsPage = () => {
 
   // Debug logging
   useEffect(() => {
-    console.log("Alerts state:", alerts);
-    console.log("Filtered alerts:", filteredAlerts);
-    console.log("Filtered alerts length:", filteredAlerts.length);
+    logger.debug("Alerts state:", alerts);
+    logger.debug("Filtered alerts:", filteredAlerts);
+    logger.debug("Filtered alerts length:", filteredAlerts.length);
   }, [alerts, filteredAlerts]);
 
   // Custom pagination handlers that call API
@@ -161,17 +170,17 @@ const AlertsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Gestión de Alertas
+              {t('alerts_title')}
             </h1>
             <p className="text-muted-foreground">
-              Historial completo de alertas del sistema
+              {t('alerts_desc')}
             </p>
           </div>
           <Button onClick={() => loadAlerts()} disabled={loading}>
             <RefreshCw
               className={cn("h-4 w-4 mr-2", loading && "animate-spin")}
             />
-            Actualizar
+            {t('refresh')}
           </Button>
         </div>
 
@@ -186,7 +195,7 @@ const AlertsPage = () => {
         {/* Filters Card */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Filtros</CardTitle>
+            <CardTitle className="text-lg">{t('filters')}</CardTitle>
           </CardHeader>
           <CardContent>
             <AlertsFilters
@@ -210,7 +219,7 @@ const AlertsPage = () => {
         {/* Alerts Table Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Alertas</CardTitle>
+            <CardTitle>{t('alert_list')}</CardTitle>
             <CardDescription>
               Total: {paginationMeta.total} alertas
             </CardDescription>
@@ -220,18 +229,18 @@ const AlertsPage = () => {
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Cargando alertas...</p>
+                  <p className="text-muted-foreground">{t('loading')}</p>
                 </div>
               </div>
             ) : filteredAlerts.length === 0 ? (
               <div className="flex items-center justify-center h-64 text-muted-foreground">
                 <div className="text-center">
                   <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                  <p className="text-lg font-medium">No hay alertas</p>
+                  <p className="text-lg font-medium">{t('no_alerts')}</p>
                   <p className="text-sm">
                     {hasActiveFilters
-                      ? "No se encontraron alertas con los filtros seleccionados"
-                      : "El sistema está funcionando correctamente"}
+                      ? t('no_alerts_filters')
+                      : t('system_ok')}
                   </p>
                 </div>
               </div>

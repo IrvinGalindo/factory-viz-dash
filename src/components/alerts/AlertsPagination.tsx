@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 interface AlertsPaginationProps {
   currentPage: number;
@@ -24,13 +25,18 @@ export const AlertsPagination = memo(
     onNextPage,
     onPageChange,
   }: AlertsPaginationProps) => {
+    const { t } = useLanguage();
     if (totalPages === 0) return null;
 
     return (
       <div className="flex items-center justify-between border-t p-4">
         <div className="text-sm text-muted-foreground">
-          Mostrando {startIndex + 1} a {Math.min(endIndex, totalItems)} de{" "}
-          {totalItems} alertas
+          {t('showing_machines')
+            .replace('{start}', (startIndex + 1).toString())
+            .replace('{end}', Math.min(endIndex, totalItems).toString())
+            .replace('{total}', totalItems.toString())
+            .replace('máquinas', t('alert_list').split(' ')[2] || 'alertas') // Quick hack or better add a generic showing_items key
+          }
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -40,7 +46,7 @@ export const AlertsPagination = memo(
             disabled={currentPage === 1}
           >
             <ChevronLeft className="h-4 w-4" />
-            Anterior
+            {t('previous')}
           </Button>
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -61,7 +67,7 @@ export const AlertsPagination = memo(
             onClick={onNextPage}
             disabled={currentPage === totalPages}
           >
-            Siguiente
+            {t('next')}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

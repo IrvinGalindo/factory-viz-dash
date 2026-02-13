@@ -18,6 +18,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarIcon, Filter } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 interface DateRange {
   from: Date | undefined;
@@ -56,17 +57,18 @@ export const AlertsFilters = memo(
     dateOpen,
     onDateOpenChange,
   }: AlertsFiltersProps) => {
+    const { t } = useLanguage();
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Filter className="h-4 w-4" />
-            Filtros
+            {t('filters')}
           </h3>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={onClearFilters}>
               <X className="h-4 w-4 mr-1" />
-              Limpiar filtros
+              {t('clear_filters')}
             </Button>
           )}
         </div>
@@ -76,7 +78,7 @@ export const AlertsFilters = memo(
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por item, columna..."
+              placeholder={t('search_placeholder')}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-9"
@@ -86,10 +88,10 @@ export const AlertsFilters = memo(
           {/* Machine filter */}
           <Select value={selectedMachineId} onValueChange={onMachineChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Todas las máquinas" />
+              <SelectValue placeholder={t('all_machines')} />
             </SelectTrigger>
             <SelectContent className="bg-background z-50">
-              <SelectItem value="all">Todas las máquinas</SelectItem>
+              <SelectItem value="all">{t('all_machines')}</SelectItem>
               {machines.map((machine) => (
                 <SelectItem key={machine.machine_id} value={machine.machine_id}>
                   {machine.line}
@@ -101,13 +103,13 @@ export const AlertsFilters = memo(
           {/* Status filter */}
           <Select value={selectedStatus} onValueChange={onStatusChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Todos los estados" />
+              <SelectValue placeholder={t('all_statuses')} />
             </SelectTrigger>
             <SelectContent className="bg-background z-50">
-              <SelectItem value="all">Todos los estados</SelectItem>
-              <SelectItem value="active">Pendiente</SelectItem>
-              <SelectItem value="acknowledged">Reconocido</SelectItem>
-              <SelectItem value="resolved">Resuelto</SelectItem>
+              <SelectItem value="all">{t('all_statuses')}</SelectItem>
+              <SelectItem value="active">{t('status_pending')}</SelectItem>
+              <SelectItem value="acknowledged">{t('status_acknowledged')}</SelectItem>
+              <SelectItem value="resolved">{t('status_resolved')}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -126,7 +128,7 @@ export const AlertsFilters = memo(
                     format(dateRange.from, "dd/MM/yyyy")
                   )
                 ) : (
-                  "Rango de fechas"
+                  t('date_range')
                 )}
               </Button>
             </PopoverTrigger>

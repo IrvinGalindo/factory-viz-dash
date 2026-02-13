@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, CheckCircle } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 interface AlertActionsProps {
   alertId: string;
@@ -27,6 +28,7 @@ export const AlertActions = memo(
     onAcknowledge,
     onResolve,
   }: AlertActionsProps) => {
+    const { t } = useLanguage();
     if (status === "resolved") {
       return null;
     }
@@ -36,7 +38,7 @@ export const AlertActions = memo(
         {status !== "acknowledged" && (
           <>
             <Textarea
-              placeholder="Comentario para reconocer (requerido)..."
+              placeholder={t('comment_placeholder')}
               value={comment}
               onChange={(e) => onCommentChange(e.target.value)}
               className="min-h-[40px] max-h-[60px] text-xs flex-1"
@@ -48,14 +50,14 @@ export const AlertActions = memo(
               disabled={processing || !comment.trim()}
             >
               <Check className="h-3 w-3 mr-1" />
-              Reconocer
+              {t('acknowledge_button')}
             </Button>
           </>
         )}
         {status === "acknowledged" && (
           <>
             <Textarea
-              placeholder="Nota para resolver (requerido)..."
+              placeholder={t('resolve_note_placeholder')}
               value={resolveNote}
               onChange={(e) => onResolveNoteChange(e.target.value)}
               className="min-h-[40px] max-h-[60px] text-xs flex-1"
@@ -68,7 +70,7 @@ export const AlertActions = memo(
               className="bg-green-600 hover:bg-green-700"
             >
               <CheckCircle className="h-3 w-3 mr-1" />
-              Resolver
+              {t('resolve_button')}
             </Button>
           </>
         )}
@@ -81,7 +83,7 @@ export const AlertActions = memo(
             className="bg-green-600 hover:bg-green-700"
           >
             <CheckCircle className="h-3 w-3 mr-1" />
-            Resolver
+            {t('resolve_button')}
           </Button>
         )}
       </div>

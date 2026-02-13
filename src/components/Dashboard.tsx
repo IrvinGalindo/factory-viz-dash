@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -43,8 +44,11 @@ import {
   fetchSPCChartData,
   SPCApiResponse,
 } from "@/services/spcApi";
+import { useLanguage } from '@/components/language-provider';
+import { logger } from "@/utils/logger";
 
 const Dashboard = () => {
+  const { t } = useLanguage();
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedMachineLine, setSelectedMachineLine] = useState("");
   const [machines, setMachines] = useState<Array<{ machine_id: string; line: string; cmm_name: string }>>([]);
@@ -90,6 +94,8 @@ const Dashboard = () => {
       status: string;
       rBar: number;
       d2: number;
+      machineUp: number;
+      machineLow: number;
     };
     rawValues: number[];
     subgroups: Array<{
@@ -117,18 +123,18 @@ const Dashboard = () => {
   useEffect(() => {
     const loadMachines = async () => {
       try {
-        console.log("🚀 Conectando al backend API...");
+        logger.debug("🚀 Conectando al backend API...");
         const data = await fetchSPCMachines();
-        console.log(`✅ Se encontraron ${data.length} máquinas`);
+        logger.info(`✅ Se encontraron ${data.length} máquinas`);
         setMachines(data);
 
         if (data.length > 0) {
-          console.log("🎯 Seleccionando primera máquina:", data[0].machine_id, data[0].line);
+          logger.debug("🎯 Seleccionando primera máquina:", { id: data[0].machine_id, line: data[0].line });
           setSelectedMachineId(data[0].machine_id);
           setSelectedMachineLine(data[0].line);
         }
       } catch (err: any) {
-        console.error("💥 Error en loadMachines:", err);
+        logger.error("💥 Error en loadMachines:", err);
         setError(`Error de conexión: ${err.message}`);
       } finally {
         setLoading(false);
@@ -148,18 +154,19 @@ const Dashboard = () => {
       }
 
       try {
-        console.log("🔍 Buscando procesos para máquina:", selectedMachineId);
+        logger.debug("🔍 Buscando procesos para máquina:", selectedMachineId);
         const processNumbers = await fetchProcessNumbers(selectedMachineId);
-        console.log("📋 Procesos encontrados:", processNumbers);
+        logger.debug("📋 Procesos encontrados:", processNumbers);
 
         setProcesses(processNumbers);
 
         if (processNumbers.length > 0) {
-          console.log("🎯 Seleccionando primer proceso:", processNumbers[0]);
+          logger.debug("🎯 Seleccionando primer proceso:", processNumbers[0]);
           setSelectedProcess(processNumbers[0]);
         }
       } catch (err) {
-        console.error("💥 Error in loadProcesses:", err);
+        logger.error("💥 Error in loadProcesses:", err);
+        toast.error("Error al cargar procesos");
         setProcesses([]);
       }
     };
@@ -184,7 +191,7 @@ const Dashboard = () => {
           ? format(dateRange.to, "dd/MM/yyyy")
           : undefined;
 
-        console.log("🎯 Buscando datos SPC para:", {
+        logger.debug("🎯 Buscando datos SPC para:", {
           machineId: selectedMachineId,
           machineLine: selectedMachineLine,
           process: selectedProcess,
@@ -199,7 +206,7 @@ const Dashboard = () => {
         );
 
         if (!apiData || !apiData.data || !apiData.data.measurements || apiData.data.measurements.length === 0) {
-          console.log("⚠️ No hay datos SPC disponibles");
+          logger.warn("⚠️ No hay datos SPC disponibles");
           setSpcData(null);
           return;
         }
@@ -207,7 +214,7 @@ const Dashboard = () => {
         // Get values and measurements from the API (values at root level)
         const rawValues = apiData.data.values || [];
         const measurement = apiData.data.measurements[0];
-        
+
         // Create chart data using actual values from the API
         const chartData = rawValues.map((value, index) => ({
           point: index + 1,
@@ -223,18 +230,18 @@ const Dashboard = () => {
           date: `Punto ${index + 1}`,
         }));
 
-        console.log("📊 Raw values from API:", rawValues.length, "values");
+        logger.debug(`📊 Raw values from API: ${rawValues.length} values`);
 
         const statusDisplay =
           measurement.status === "in_control"
             ? "Conforme"
             : measurement.status === "out_of_control"
-            ? "Fuera de Control"
-            : measurement.status === "warning"
-            ? "Advertencia"
-            : measurement.status === "insufficient_data"
-            ? "Datos Insuficientes"
-            : "Desconocido";
+              ? "Fuera de Control"
+              : measurement.status === "warning"
+                ? "Advertencia"
+                : measurement.status === "insufficient_data"
+                  ? "Datos Insuficientes"
+                  : "Desconocido";
 
         const statisticsData = {
           spec: measurement.nominal,
@@ -264,8 +271,8 @@ const Dashboard = () => {
           machineLow: measurement.lowerTolerance,
         };
 
-        console.log("🎊 Final chart data:", chartData.length, "points");
-        console.log("📊 Final statistics:", statisticsData);
+        logger.debug(`🎊 Final chart data: ${chartData.length} points`);
+        logger.debug("📊 Final statistics:", statisticsData);
 
         setSpcData({
           data: chartData,
@@ -278,7 +285,8 @@ const Dashboard = () => {
           },
         });
       } catch (err) {
-        console.error("💥 Error in loadSPCData:", err);
+        logger.error("💥 Error in loadSPCData:", err);
+        toast.error("Error al cargar datos SPC");
         setSpcData(null);
       } finally {
         setSpcLoading(false);
@@ -321,7 +329,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando máquinas...</p>
+          <p className="text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     );
@@ -360,17 +368,17 @@ const Dashboard = () => {
               <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto" />
               <div>
                 <h3 className="text-lg font-semibold">
-                  No se encontraron máquinas
+                  {t('no_machines')}
                 </h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  No hay datos disponibles en el sistema.
+                  {t('no_machines_found')}
                 </p>
               </div>
               <button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
               >
-                Reintentar
+                {t('retry')}
               </button>
             </div>
           </CardContent>
@@ -386,11 +394,11 @@ const Dashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Dashboard de Máquinas
+              {t('dashboard_title')}
             </h1>
             <p className="text-muted-foreground">
-              Monitoreo en tiempo real del rendimiento de las máquinas (
-              {machines.length} máquinas encontradas)
+              {t('dashboard_desc')} (
+              {machines.length} {t('machines_found')})
             </p>
           </div>
 
@@ -414,7 +422,7 @@ const Dashboard = () => {
                         format(dateRange.from, "dd/MM/yyyy", { locale: es })
                       )
                     ) : (
-                      <span>Seleccionar fechas...</span>
+                      <span>{t('select_dates')}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -447,7 +455,7 @@ const Dashboard = () => {
                           });
                         }}
                       >
-                        Últimos 7 días
+                        {t('last_7_days')}
                       </Button>
                       <Button
                         variant="outline"
@@ -459,7 +467,7 @@ const Dashboard = () => {
                           });
                         }}
                       >
-                        Últimos 30 días
+                        {t('last_30_days')}
                       </Button>
                       <Button
                         variant="outline"
@@ -468,7 +476,7 @@ const Dashboard = () => {
                           setDateOpen(false);
                         }}
                       >
-                        Aplicar
+                        {t('apply')}
                       </Button>
                     </div>
                   </div>
@@ -486,14 +494,14 @@ const Dashboard = () => {
                     aria-expanded={machineOpen}
                     className="w-full justify-between"
                   >
-                    {selectedMachineLine || "Seleccionar máquina..."}
+                    {selectedMachineLine || t('select_machine')}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-0">
                   <Command>
-                    <CommandInput placeholder="Buscar máquina..." />
-                    <CommandEmpty>No se encontraron máquinas.</CommandEmpty>
+                    <CommandInput placeholder={t('search_machine')} />
+                    <CommandEmpty>{t('no_machines_found')}</CommandEmpty>
                     <CommandGroup>
                       {machines.map((machine, index) => (
                         <CommandItem
@@ -506,11 +514,10 @@ const Dashboard = () => {
                           }}
                         >
                           <Check
-                            className={`mr-2 h-4 w-4 ${
-                              selectedMachineId === machine.machine_id
-                                ? "opacity-100"
-                                : "opacity-0"
-                            }`}
+                            className={`mr-2 h-4 w-4 ${selectedMachineId === machine.machine_id
+                              ? "opacity-100"
+                              : "opacity-0"
+                              }`}
                           />
                           {machine.line}
                         </CommandItem>
@@ -532,9 +539,9 @@ const Dashboard = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Control Estadístico de Procesos (SPC)</CardTitle>
+                    <CardTitle>{t('spc_title')}</CardTitle>
                     <CardDescription>
-                      Gráfico de control para la máquina: {selectedMachineLine}
+                      {t('spc_desc')}: {selectedMachineLine}
                       {dateRange.from && dateRange.to && (
                         <span className="ml-2 text-xs text-muted-foreground">
                           (
@@ -545,7 +552,7 @@ const Dashboard = () => {
                       )}
                       {spcData?.stats?.measurementName && (
                         <span className="ml-2 text-xs text-blue-600">
-                          | Medición: {spcData.stats.measurementName}
+                          | {t('measurement')}: {spcData.stats.measurementName}
                         </span>
                       )}
                     </CardDescription>
@@ -561,18 +568,18 @@ const Dashboard = () => {
                           disabled={processes.length === 0}
                         >
                           {selectedProcess
-                            ? `Proceso ${selectedProcess}`
+                            ? `${t('process')} ${selectedProcess}`
                             : processes.length === 0
-                            ? "Cargando procesos..."
-                            : "Seleccionar proceso..."}
+                              ? t('loading')
+                              : t('select_process')}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-60 p-0">
                         <Command>
-                          <CommandInput placeholder="Buscar proceso..." />
+                          <CommandInput placeholder={t('search_process')} />
                           <CommandEmpty>
-                            No se encontraron procesos.
+                            {t('no_process_selected')}
                           </CommandEmpty>
                           <CommandGroup>
                             {processes.map((process) => (
@@ -585,13 +592,12 @@ const Dashboard = () => {
                                 }}
                               >
                                 <Check
-                                  className={`mr-2 h-4 w-4 ${
-                                    selectedProcess === process
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  }`}
+                                  className={`mr-2 h-4 w-4 ${selectedProcess === process
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                    }`}
                                 />
-                                Proceso {process}
+                                {t('process')} {process}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -607,7 +613,7 @@ const Dashboard = () => {
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                       <p className="text-muted-foreground">
-                        Cargando datos SPC...
+                        {t('loading_spc')}
                       </p>
                     </div>
                   </div>
@@ -628,37 +634,37 @@ const Dashboard = () => {
                     {/* Info adicional */}
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                       <div className="bg-muted/50 p-3 rounded">
-                        <div className="font-semibold">Puntos de datos:</div>
+                        <div className="font-semibold">{t('data_points')}:</div>
                         <div className="text-lg">{spcData.data.length}</div>
                       </div>
                       <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded">
                         <div className="font-semibold text-yellow-800 dark:text-yellow-200">
-                          No Conformes:
+                          {t('non_conformant')}:
                         </div>
                         <div className="text-yellow-900 dark:text-yellow-100">
                           {spcData.stats.outOfSpecCount}/{spcData.data.length} (
                           {spcData.data.length > 0
                             ? (
-                                (spcData.stats.outOfSpecCount /
-                                  spcData.data.length) *
-                                100
-                              ).toFixed(1)
+                              (spcData.stats.outOfSpecCount /
+                                spcData.data.length) *
+                              100
+                            ).toFixed(1)
                             : "0.0"}
                           %)
                         </div>
                       </div>
                       <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded">
                         <div className="font-semibold text-green-800 dark:text-green-200">
-                          Dentro de Spec
+                          {t('within_spec')}
                         </div>
                         <div className="text-green-900 dark:text-green-100">
                           {spcData.data.length > 0
                             ? (
-                                ((spcData.data.length -
-                                  spcData.stats.outOfSpecCount) /
-                                  spcData.data.length) *
-                                100
-                              ).toFixed(1)
+                              ((spcData.data.length -
+                                spcData.stats.outOfSpecCount) /
+                                spcData.data.length) *
+                              100
+                            ).toFixed(1)
                             : "0.0"}
                           %
                         </div>
@@ -669,15 +675,15 @@ const Dashboard = () => {
                       </div>
                       <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded">
                         <div className="font-semibold text-red-800 dark:text-red-200">
-                          Fuera de Spec
+                          {t('out_of_spec')}
                         </div>
                         <div className="text-red-900 dark:text-red-100">
                           {spcData.data.length > 0
                             ? (
-                                (spcData.stats.outOfSpecCount /
-                                  spcData.data.length) *
-                                100
-                              ).toFixed(1)
+                              (spcData.stats.outOfSpecCount /
+                                spcData.data.length) *
+                              100
+                            ).toFixed(1)
                             : "0.0"}
                           %
                         </div>
@@ -686,20 +692,18 @@ const Dashboard = () => {
                         </div>
                       </div>
                       <div
-                        className={`p-3 rounded ${
-                          spcData.stats.status === "Conforme"
-                            ? "bg-green-100 dark:bg-green-900/30"
-                            : "bg-red-100 dark:bg-red-900/30"
-                        }`}
+                        className={`p-3 rounded ${spcData.stats.status === "Conforme"
+                          ? "bg-green-100 dark:bg-green-900/30"
+                          : "bg-red-100 dark:bg-red-900/30"
+                          }`}
                       >
                         <div
-                          className={`font-semibold ${
-                            spcData.stats.status === "Conforme"
-                              ? "text-green-800 dark:text-green-200"
-                              : "text-red-800 dark:text-red-200"
-                          }`}
+                          className={`font-semibold ${spcData.stats.status === "Conforme"
+                            ? "text-green-800 dark:text-green-200"
+                            : "text-red-800 dark:text-red-200"
+                            }`}
                         >
-                          Estado:
+                          {t('status')}:
                         </div>
                         <div
                           className={
@@ -718,13 +722,13 @@ const Dashboard = () => {
                     <div className="text-center">
                       <div className="text-lg font-medium mb-2">
                         {selectedProcess
-                          ? "No hay datos SPC disponibles"
-                          : "Selecciona un proceso"}
+                          ? t('no_spc_data')
+                          : t('no_process_selected')}
                       </div>
                       <div className="text-sm">
                         {selectedProcess
-                          ? "No se encontraron estadísticas SPC para este proceso en el rango de fechas seleccionado"
-                          : "Selecciona un proceso para ver el gráfico SPC"}
+                          ? t('no_spc_data')
+                          : t('no_process_selected')}
                       </div>
                     </div>
                   </div>
@@ -740,14 +744,13 @@ const Dashboard = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle>
-                        Histograma de Capacidad - Proceso {selectedProcess}
+                        {t('capability_histogram')} - {t('process')} {selectedProcess}
                       </CardTitle>
                       <CardDescription>
-                        Distribución de mediciones con límites de especificación
-                        y control
+                        {t('distribution_desc')}
                         <br />
                         <span className="text-xs text-muted-foreground">
-                          Período:{" "}
+                          {t('period')}:{" "}
                           {format(dateRange.from, "dd/MM/yyyy", { locale: es })}{" "}
                           -{" "}
                           {format(dateRange.to, "dd/MM/yyyy", { locale: es })}
@@ -801,9 +804,9 @@ const Dashboard = () => {
 
               {/* S Chart - Control de Variabilidad */}
               {spcData &&
-              selectedProcess &&
-              spcData.subgroups &&
-              spcData.subgroups.length > 0 ? (
+                selectedProcess &&
+                spcData.subgroups &&
+                spcData.subgroups.length > 0 ? (
                 <div className="md:col-span-2">
                   <SChart
                     subgroups={spcData.subgroups}
@@ -815,9 +818,9 @@ const Dashboard = () => {
 
               {/* Normal Probability Plot */}
               {spcData &&
-              selectedProcess &&
-              spcData.rawValues &&
-              spcData.rawValues.length > 0 ? (
+                selectedProcess &&
+                spcData.rawValues &&
+                spcData.rawValues.length > 0 ? (
                 <div className="md:col-span-2">
                   <NormalProbabilityPlot
                     values={spcData.rawValues}
@@ -858,8 +861,8 @@ const Dashboard = () => {
                             {recommendation.priority === "high"
                               ? "Alta"
                               : recommendation.priority === "medium"
-                              ? "Media"
-                              : "Baja"}
+                                ? "Media"
+                                : "Baja"}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
