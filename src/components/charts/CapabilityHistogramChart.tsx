@@ -41,57 +41,57 @@ interface CapabilityHistogramChartProps {
 const CustomTooltip = ({ active, payload, stats }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    
+
     return (
       <div className="bg-background border border-border rounded-lg shadow-lg p-4 text-sm">
         <div className="font-semibold mb-2 text-foreground border-b pb-2">
           Rango: {data.rangeStart.toFixed(4)} - {data.rangeEnd.toFixed(4)}
         </div>
-        
+
         <div className="space-y-1.5">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Frecuencia Total:</span>
             <span className="font-semibold text-foreground">{data.frequency}</span>
           </div>
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-green-600 dark:text-green-400">Dentro de Spec:</span>
             <span className="font-semibold text-green-700 dark:text-green-300">{data.withinSpec}</span>
           </div>
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-red-600 dark:text-red-400">Fuera de Spec:</span>
             <span className="font-semibold text-red-700 dark:text-red-300">{data.outOfSpec}</span>
           </div>
         </div>
-        
+
         <div className="border-t mt-2 pt-2 space-y-1 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">LSL:</span>
             <span className="text-red-600 dark:text-red-400 font-medium">{stats.lowerSpecLimit}</span>
           </div>
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Promedio (X̄):</span>
             <span className="text-blue-600 dark:text-blue-400 font-medium">{stats.avg}</span>
           </div>
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">USL:</span>
             <span className="text-red-600 dark:text-red-400 font-medium">{stats.upperSpecLimit}</span>
           </div>
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">LCL:</span>
             <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.lcl}</span>
           </div>
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">UCL:</span>
             <span className="text-pink-600 dark:text-pink-400 font-medium">{stats.ucl}</span>
           </div>
         </div>
-        
+
         <div className="border-t mt-2 pt-2 text-xs space-y-1">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Cp:</span>
@@ -99,28 +99,28 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
               {stats.cp != null ? stats.cp : 'N/A'}
             </span>
           </div>
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Cpk:</span>
             <span className="font-medium text-foreground">
               {stats.cpk != null ? stats.cpk : 'N/A'}
             </span>
           </div>
-          
+
           {stats.pp != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Pp:</span>
               <span className="font-medium text-foreground">{stats.pp}</span>
             </div>
           )}
-          
+
           {stats.ppk != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Ppk:</span>
               <span className="font-medium text-foreground">{stats.ppk}</span>
             </div>
           )}
-          
+
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">σ (Desv. Estándar):</span>
             <span className="font-medium text-foreground">
@@ -131,7 +131,7 @@ const CustomTooltip = ({ active, payload, stats }: any) => {
       </div>
     );
   }
-  
+
   return null;
 };
 
@@ -155,7 +155,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   console.log("📊 Histograma - Valores recibidos:", rawValues.length);
   console.log("📊 Histograma - rawValues:", rawValues);
   console.log("📊 Histograma - stats.sampleCount:", stats.sampleCount);
-  
+
   if (!rawValues || rawValues.length === 0) {
     return (
       <Card>
@@ -173,16 +173,16 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const minValue = Math.min(...rawValues);
   const maxValue = Math.max(...rawValues);
   const range = maxValue - minValue;
-  
+
   // Priorizar rangos de 0.5
   const preferredBinWidth = 0.5;
   const potentialBins = Math.ceil(range / preferredBinWidth);
-  
+
   // Si el número de bins con 0.5 es razonable (entre 5 y 30), usar 0.5
   // Si no, calcular usando la regla de Sturges
   let numBins: number;
   let binWidth: number;
-  
+
   if (potentialBins >= 5 && potentialBins <= 30) {
     binWidth = preferredBinWidth;
     numBins = potentialBins;
@@ -192,7 +192,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
     binWidth = range / numBins;
     console.log("📊 Histograma - Usando rangos custom (Sturges)");
   }
-  
+
   console.log("📊 Histograma - Número de bins calculados:", numBins);
 
   // Crear bins para el histograma
@@ -201,19 +201,19 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
     const rangeStart = minValue + (i * binWidth);
     const rangeEnd = rangeStart + binWidth;
     const midPoint = (rangeStart + rangeEnd) / 2;
-    
+
     // Obtener los valores que caen en este bin
-    const valuesInBin = rawValues.filter(v => 
+    const valuesInBin = rawValues.filter(v =>
       v >= rangeStart && (i === numBins - 1 ? v <= rangeEnd : v < rangeEnd)
     );
-    
+
     // Contar cuántos están dentro y fuera de especificación
-    const withinSpecInBin = valuesInBin.filter(v => 
+    const withinSpecInBin = valuesInBin.filter(v =>
       v >= stats.lowerSpecLimit && v <= stats.upperSpecLimit
     ).length;
-    
+
     const outOfSpecInBin = valuesInBin.length - withinSpecInBin;
-    
+
     bins.push({
       range: `${rangeStart}-${rangeEnd}`,
       frequency: valuesInBin.length,
@@ -225,7 +225,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
       isOutOfSpec: outOfSpecInBin > 0 && withinSpecInBin === 0 // Solo si TODOS están fuera
     });
   }
-  
+
   console.log("📊 Histograma - Bins creados:", bins);
 
   // Calcular el rango extendido para la curva normal (4 desviaciones estándar en cada lado)
@@ -234,24 +234,24 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   const curveMin = stats.avg - (4 * stdOverall);
   const curveMax = stats.avg + (4 * stdOverall);
   const curveRange = curveMax - curveMin;
-  
+
   // Calcular valores de la curva normal con rango extendido
   const normalCurvePoints: any[] = [];
   const curveSteps = 200; // Más puntos para una curva más suave
   const curveStep = curveRange / curveSteps;
   const maxFrequency = Math.max(...bins.map(b => b.frequency));
-  
+
   for (let i = 0; i <= curveSteps; i++) {
     const x = curveMin + (i * curveStep);
-    
+
     // Curva Normal Overall
     const normalValueOverall = calculateNormalDistribution(x, stats.avg, stdOverall);
     const scaledValueOverall = normalValueOverall * rawValues.length * binWidth;
-    
+
     // Curva Normal Within
     const normalValueWithin = calculateNormalDistribution(x, stats.avg, stdWithin);
     const scaledValueWithin = normalValueWithin * rawValues.length * binWidth;
-    
+
     normalCurvePoints.push({
       x: x,
       normalValueOverall: scaledValueOverall,
@@ -262,7 +262,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
   // Combinar datos del histograma con la curva normal
   // Primero, agregar puntos para la curva que están fuera del rango de los bins
   const chartData: any[] = [];
-  
+
   // Agregar puntos de la curva antes del primer bin
   normalCurvePoints
     .filter(p => p.x < bins[0].rangeStart)
@@ -280,18 +280,18 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
         isExtended: true // Marcador para saber que es parte de la extensión
       });
     });
-  
+
   // Agregar bins con sus valores de curva normal
   bins.forEach(bin => {
     const normalPoint = normalCurvePoints.find(p => Math.abs(p.x - bin.midPoint) < curveStep * 2);
-    
+
     chartData.push({
       ...bin,
       normalValueOverall: normalPoint?.normalValueOverall || 0,
       normalValueWithin: normalPoint?.normalValueWithin || 0
     });
   });
-  
+
   // Agregar puntos de la curva después del último bin
   normalCurvePoints
     .filter(p => p.x > bins[bins.length - 1].rangeEnd)
@@ -353,7 +353,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
           <ResponsiveContainer width="100%" height={400}>
             <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 60 }} barCategoryGap="1%" barGap={0}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.3} />
-              
+
               {/* Definir gradientes para las áreas de desviación */}
               <defs>
                 <linearGradient id="sigma3Area" x1="0" y1="0" x2="0" y2="1">
@@ -369,9 +369,9 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                   <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.1} />
                 </linearGradient>
               </defs>
-              
-              <XAxis 
-                dataKey="midPoint" 
+
+              <XAxis
+                dataKey="midPoint"
                 type="number"
                 domain={[absoluteMin - domainPadding, absoluteMax + domainPadding]}
                 stroke="hsl(var(--foreground))"
@@ -384,141 +384,139 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 interval="preserveStartEnd"
                 label={{ value: 'Valor', position: 'insideBottom', offset: -5, fontSize: 11 }}
               />
-              <YAxis 
+              <YAxis
                 stroke="hsl(var(--foreground))"
                 fontSize={10}
                 width={40}
                 domain={[0, yMax]}
                 label={{ value: 'Frecuencia', angle: -90, position: 'insideLeft', fontSize: 11 }}
               />
-              
+
               {/* Custom Tooltip */}
               <Tooltip content={<CustomTooltip stats={stats} />} />
-              
+
               {/* Reference lines for spec limits */}
-              <ReferenceLine 
-                x={stats.upperSpecLimit} 
-                stroke="#dc2626" 
+              <ReferenceLine
+                x={stats.upperSpecLimit}
+                stroke="#dc2626"
                 strokeWidth={3}
                 label={{ value: 'USL', position: 'top', fill: '#dc2626', fontSize: 12, fontWeight: 'bold' }}
               />
-              <ReferenceLine 
-                x={stats.lowerSpecLimit} 
-                stroke="#dc2626" 
+              <ReferenceLine
+                x={stats.lowerSpecLimit}
+                stroke="#dc2626"
                 strokeWidth={3}
                 label={{ value: 'LSL', position: 'top', fill: '#dc2626', fontSize: 12, fontWeight: 'bold' }}
               />
-              
+
               {/* Reference lines for control limits */}
-              <ReferenceLine 
-                x={stats.ucl} 
-                stroke="#ec4899" 
+              <ReferenceLine
+                x={stats.ucl}
+                stroke="#ec4899"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 label={{ value: 'UCL', position: 'top', fill: '#ec4899', fontSize: 10 }}
               />
-              <ReferenceLine 
-                x={stats.lcl} 
-                stroke="#ec4899" 
+              <ReferenceLine
+                x={stats.lcl}
+                stroke="#ec4899"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 label={{ value: 'LCL', position: 'top', fill: '#ec4899', fontSize: 10 }}
               />
-              
+
               {/* Reference line for average/nominal */}
-              <ReferenceLine 
-                x={stats.avg} 
-                stroke="#3b82f6" 
+              <ReferenceLine
+                x={stats.avg}
+                stroke="#3b82f6"
                 strokeWidth={2}
                 strokeDasharray="8 4"
                 label={{ value: 'X̄', position: 'top', fill: '#3b82f6', fontSize: 12, fontWeight: 'bold' }}
               />
-              
+
               {/* Reference lines for standard deviations */}
-              <ReferenceLine 
-                x={stats.avg + stdOverall} 
-                stroke="#8b5cf6" 
+              <ReferenceLine
+                x={stats.avg + stdOverall}
+                stroke="#8b5cf6"
                 strokeWidth={1}
                 strokeDasharray="3 3"
                 opacity={0.5}
                 label={{ value: '+1σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
-              <ReferenceLine 
-                x={stats.avg - stdOverall} 
-                stroke="#8b5cf6" 
+              <ReferenceLine
+                x={stats.avg - stdOverall}
+                stroke="#8b5cf6"
                 strokeWidth={1}
                 strokeDasharray="3 3"
                 opacity={0.5}
                 label={{ value: '-1σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
-              <ReferenceLine 
-                x={stats.avg + 2*stdOverall} 
-                stroke="#8b5cf6" 
+              <ReferenceLine
+                x={stats.avg + 2 * stdOverall}
+                stroke="#8b5cf6"
                 strokeWidth={1}
                 strokeDasharray="3 3"
                 opacity={0.4}
                 label={{ value: '+2σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
-              <ReferenceLine 
-                x={stats.avg - 2*stdOverall} 
-                stroke="#8b5cf6" 
+              <ReferenceLine
+                x={stats.avg - 2 * stdOverall}
+                stroke="#8b5cf6"
                 strokeWidth={1}
                 strokeDasharray="3 3"
                 opacity={0.4}
                 label={{ value: '-2σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
-              <ReferenceLine 
-                x={stats.avg + 3*stdOverall} 
-                stroke="#8b5cf6" 
+              <ReferenceLine
+                x={stats.avg + 3 * stdOverall}
+                stroke="#8b5cf6"
                 strokeWidth={1}
                 strokeDasharray="3 3"
                 opacity={0.3}
                 label={{ value: '+3σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
-              <ReferenceLine 
-                x={stats.avg - 3*stdOverall} 
-                stroke="#8b5cf6" 
+              <ReferenceLine
+                x={stats.avg - 3 * stdOverall}
+                stroke="#8b5cf6"
                 strokeWidth={1}
                 strokeDasharray="3 3"
                 opacity={0.3}
                 label={{ value: '-3σ', position: 'top', fill: '#8b5cf6', fontSize: 9 }}
               />
-              
+
               {/* Histogram bars - Dentro de especificación */}
-              <Bar 
-                dataKey="withinSpec" 
+              <Bar
+                dataKey="withinSpec"
                 stackId="spec"
                 name="Dentro de Spec"
                 fill="#22c55e"
                 opacity={0.8}
-                maxBarSize={80}
               />
-              
+
               {/* Histogram bars - Fuera de especificación */}
-              <Bar 
-                dataKey="outOfSpec" 
+              <Bar
+                dataKey="outOfSpec"
                 stackId="spec"
                 name="Fuera de Spec"
                 fill="#ef4444"
                 opacity={0.8}
-                maxBarSize={80}
               />
-              
+
               {/* Normal distribution curves */}
-              <Line 
-                type="basis" 
-                dataKey="normalValueOverall" 
-                stroke="#f59e0b" 
+              <Line
+                type="basis"
+                dataKey="normalValueOverall"
+                stroke="#f59e0b"
                 strokeWidth={2.5}
                 dot={false}
                 name="Curva Overall"
                 opacity={0.9}
                 isAnimationActive={false}
               />
-              <Line 
-                type="basis" 
-                dataKey="normalValueWithin" 
-                stroke="#10b981" 
+              <Line
+                type="basis"
+                dataKey="normalValueWithin"
+                stroke="#10b981"
                 strokeWidth={2.5}
                 dot={false}
                 name="Curva Within"
@@ -528,7 +526,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
             </ComposedChart>
           </ResponsiveContainer>
         </CardContent>
-        
+
         {/* Legend */}
         <div className="px-2 pb-2 md:px-4 md:pb-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 text-xs md:text-sm mb-4">
@@ -553,15 +551,15 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               <span>LSL/USL (Límites Spec)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-blue-500" style={{backgroundImage: 'linear-gradient(to right, #3b82f6 50%, transparent 50%)', backgroundSize: '8px 2px'}}></div>
+              <div className="w-4 h-0.5 bg-blue-500" style={{ backgroundImage: 'linear-gradient(to right, #3b82f6 50%, transparent 50%)', backgroundSize: '8px 2px' }}></div>
               <span>X̄ (Promedio)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-pink-500 border-dashed border-t-2 border-pink-500" style={{borderStyle: 'dashed'}}></div>
+              <div className="w-4 h-0.5 bg-pink-500 border-dashed border-t-2 border-pink-500" style={{ borderStyle: 'dashed' }}></div>
               <span>UCL/LCL (Control)</span>
             </div>
           </div>
-          
+
           {/* Process Data and Statistics Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 border-t pt-4">
             {/* Process Data */}
@@ -594,7 +592,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                 </div>
               </div>
             </div>
-            
+
             {/* Capability Indices */}
             <div>
               <h4 className="font-semibold text-sm mb-3 text-foreground">Índices de Capacidad</h4>
@@ -628,7 +626,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
               </div>
             </div>
           </div>
-          
+
           {/* Performance Section */}
           <div className="mt-6 border-t pt-4">
             <h4 className="font-semibold text-sm mb-3 text-foreground">Desempeño</h4>
@@ -675,7 +673,7 @@ export const CapabilityHistogramChart = ({ rawValues, stats }: CapabilityHistogr
                     <td className="text-right py-2 px-2 font-mono font-semibold">
                       {(stats.stdWithin ? (
                         (normalCDF((stats.lowerSpecLimit - stats.avg) / stats.stdWithin) +
-                        (1 - normalCDF((stats.upperSpecLimit - stats.avg) / stats.stdWithin))) * 1000000
+                          (1 - normalCDF((stats.upperSpecLimit - stats.avg) / stats.stdWithin))) * 1000000
                       ).toFixed(2) : 'N/A')}
                     </td>
                     <td className="text-right py-2 px-2 font-mono font-semibold">

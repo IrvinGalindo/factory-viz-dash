@@ -34,20 +34,21 @@ export const AlertActions = memo(
     }
 
     return (
-      <div className="flex items-center gap-2 min-w-[500px]">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full">
         {status !== "acknowledged" && (
           <>
             <Textarea
               placeholder={t('comment_placeholder')}
               value={comment}
               onChange={(e) => onCommentChange(e.target.value)}
-              className="min-h-[40px] max-h-[60px] text-xs flex-1"
+              className="min-h-[40px] max-h-[60px] text-xs flex-1 w-full md:w-auto"
             />
             <Button
               variant="outline"
               size="sm"
               onClick={onAcknowledge}
               disabled={processing || !comment.trim()}
+              className="w-full md:w-auto"
             >
               <Check className="h-3 w-3 mr-1" />
               {t('acknowledge_button')}
@@ -60,14 +61,14 @@ export const AlertActions = memo(
               placeholder={t('resolve_note_placeholder')}
               value={resolveNote}
               onChange={(e) => onResolveNoteChange(e.target.value)}
-              className="min-h-[40px] max-h-[60px] text-xs flex-1"
+              className="min-h-[40px] max-h-[60px] text-xs flex-1 w-full md:w-auto"
             />
             <Button
               variant="default"
               size="sm"
               onClick={onResolve}
               disabled={processing || !resolveNote.trim()}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               {t('resolve_button')}
@@ -80,7 +81,7 @@ export const AlertActions = memo(
             size="sm"
             onClick={onResolve}
             disabled={processing || !resolveNote.trim()}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
           >
             <CheckCircle className="h-3 w-3 mr-1" />
             {t('resolve_button')}

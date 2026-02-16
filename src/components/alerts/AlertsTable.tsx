@@ -10,6 +10,12 @@ import {
   TableRow,
   Table,
 } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLanguage } from "@/components/language-provider";
@@ -66,26 +72,111 @@ export const AlertsTable = memo(
     };
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[300px]">{t('alert')}</TableHead>
-            <TableHead>{t('machine')}</TableHead>
-            <TableHead>{t('severity')}</TableHead>
-            <TableHead>{t('status')}</TableHead>
-            <TableHead>{t('date')}</TableHead>
-            <TableHead className="text-right">{t('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <div className="space-y-4">
+        {/* Desktop View */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[300px]">{t('alert')}</TableHead>
+                <TableHead>{t('machine')}</TableHead>
+                <TableHead>{t('severity')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('date')}</TableHead>
+                <TableHead className="text-right">{t('actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {alerts.map((alert) => (
+                <TableRow key={alert.alert_id} className="align-top">
+                  <TableCell>
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">
+                        {getMachineName(alert.machine_id, machines)}:{" "}
+                        {formatAlertTitle(alert)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {alert.item} - {alert.column_name} | {t('process')}:{" "}
+                        {alert.process_number}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('nominal')}: {alert.nominal?.toFixed(4)} | {t('limits')}: [
+                        {alert.lower_limit?.toFixed(4)}, {alert.upper_limit?.toFixed(4)}
+                        ]
+                      </p>
+                      {alert.notes && (
+                        <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded">
+                          💬 {alert.notes}
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-medium">
+                      {getMachineName(alert.machine_id, machines)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <SeverityBadge severity={alert.severity} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={alert.status} />
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {format(new Date(alert.created_at), "dd/MM/yyyy HH:mm", {
+                        locale: es,
+                      })}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <AlertActions
+                      alertId={alert.alert_id}
+                      status={alert.status}
+                      comment={alertComments[alert.alert_id] || ""}
+                      resolveNote={resolveNotes[alert.alert_id] || ""}
+                      processing={processingAlertId === alert.alert_id}
+                      onCommentChange={(comment) =>
+                        onCommentChange(alert.alert_id, comment)
+                      }
+                      onResolveNoteChange={(note) =>
+                        onResolveNoteChange(alert.alert_id, note)
+                      }
+                      onAcknowledge={() => onAcknowledge(alert.alert_id)}
+                      onResolve={() => onResolve(alert.alert_id)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden space-y-4">
           {alerts.map((alert) => (
-            <TableRow key={alert.alert_id} className="align-top">
-              <TableCell>
+            <Card key={alert.alert_id}>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-sm font-medium">
+                      {getMachineName(alert.machine_id, machines)}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(alert.created_at), "dd/MM/yyyy HH:mm", {
+                        locale: es,
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <SeverityBadge severity={alert.severity} />
+                    <StatusBadge status={alert.status} />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-1">
-                  <p className="font-medium text-sm">
-                    {getMachineName(alert.machine_id, machines)}:{" "}
-                    {formatAlertTitle(alert)}
-                  </p>
+                  <p className="text-sm font-medium">{formatAlertTitle(alert)}</p>
                   <p className="text-xs text-muted-foreground">
                     {alert.item} - {alert.column_name} | {t('process')}:{" "}
                     {alert.process_number}
@@ -101,26 +192,7 @@ export const AlertsTable = memo(
                     </p>
                   )}
                 </div>
-              </TableCell>
-              <TableCell>
-                <span className="font-medium">
-                  {getMachineName(alert.machine_id, machines)}
-                </span>
-              </TableCell>
-              <TableCell>
-                <SeverityBadge severity={alert.severity} />
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={alert.status} />
-              </TableCell>
-              <TableCell>
-                <div className="text-sm">
-                  {format(new Date(alert.created_at), "dd/MM/yyyy HH:mm", {
-                    locale: es,
-                  })}
-                </div>
-              </TableCell>
-              <TableCell>
+
                 <AlertActions
                   alertId={alert.alert_id}
                   status={alert.status}
@@ -136,11 +208,11 @@ export const AlertsTable = memo(
                   onAcknowledge={() => onAcknowledge(alert.alert_id)}
                   onResolve={() => onResolve(alert.alert_id)}
                 />
-              </TableCell>
-            </TableRow>
+              </CardContent>
+            </Card>
           ))}
-        </TableBody>
-      </Table>
+        </div>
+      </div>
     );
   }
 );
