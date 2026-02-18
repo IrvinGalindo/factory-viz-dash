@@ -27,15 +27,7 @@ import { CapabilityHistogramChart } from "@/components/charts/CapabilityHistogra
 import { SPCChart } from "@/components/charts/SPCChart";
 import { SChart } from "@/components/charts/SChart";
 import { NormalProbabilityPlot } from "@/components/charts/NormalProbabilityPlot";
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  ChevronsUpDown,
-  Check,
-  CalendarIcon,
-} from "lucide-react";
+import { AlertCircle, AlertTriangle, ChevronsUpDown, Check, CalendarIcon } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -298,31 +290,7 @@ const Dashboard = () => {
 
   const data = selectedMachineId ? generateMockData(selectedMachineLine) : null;
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return <AlertCircle className="h-4 w-4 text-destructive" />;
-      case "medium":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case "low":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
 
-  const getPriorityVariant = (priority: string): "destructive" | "secondary" | "outline" => {
-    switch (priority) {
-      case "high":
-        return "destructive";
-      case "medium":
-        return "secondary";
-      case "low":
-        return "outline";
-      default:
-        return "outline";
-    }
-  };
 
   if (loading) {
     return (
@@ -391,7 +359,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
               {t('dashboard_title')}
@@ -402,9 +370,9 @@ const Dashboard = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             {/* Date Range Picker */}
-            <div className="w-80">
+            <div className="w-full sm:w-80">
               <Popover open={dateOpen} onOpenChange={setDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -485,7 +453,7 @@ const Dashboard = () => {
             </div>
 
             {/* Machine Selector */}
-            <div className="w-80">
+            <div className="w-full sm:w-80">
               <Popover open={machineOpen} onOpenChange={setMachineOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -498,7 +466,7 @@ const Dashboard = () => {
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-0">
+                <PopoverContent className="w-[calc(100vw-3rem)] sm:w-80 p-0">
                   <Command>
                     <CommandInput placeholder={t('search_machine')} />
                     <CommandEmpty>{t('no_machines_found')}</CommandEmpty>
@@ -537,13 +505,13 @@ const Dashboard = () => {
             {/* SPC Control Chart Section */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <CardTitle>{t('spc_title')}</CardTitle>
                     <CardDescription>
                       {t('spc_desc')}: {selectedMachineLine}
                       {dateRange.from && dateRange.to && (
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        <span className="block sm:inline sm:ml-2 text-xs text-muted-foreground">
                           (
                           {format(dateRange.from, "dd/MM/yyyy", { locale: es })}{" "}
                           - {format(dateRange.to, "dd/MM/yyyy", { locale: es })}
@@ -551,13 +519,13 @@ const Dashboard = () => {
                         </span>
                       )}
                       {spcData?.stats?.measurementName && (
-                        <span className="ml-2 text-xs text-blue-600">
+                        <span className="block sm:inline sm:ml-2 text-xs text-blue-600">
                           | {t('measurement')}: {spcData.stats.measurementName}
                         </span>
                       )}
                     </CardDescription>
                   </div>
-                  <div className="w-60">
+                  <div className="w-full sm:w-60">
                     <Popover open={processOpen} onOpenChange={setProcessOpen}>
                       <PopoverTrigger asChild>
                         <Button
@@ -575,7 +543,7 @@ const Dashboard = () => {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-60 p-0">
+                      <PopoverContent className="w-[calc(100vw-5rem)] sm:w-60 p-0">
                         <Command>
                           <CommandInput placeholder={t('search_process')} />
                           <CommandEmpty>
@@ -831,52 +799,7 @@ const Dashboard = () => {
 
             </div>
 
-            {/* Recommendations Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recomendaciones</CardTitle>
-                <CardDescription>
-                  Sugerencias basadas en el análisis de datos de la máquina:{" "}
-                  {selectedMachineLine}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {data.recommendations.map((recommendation) => (
-                    <div
-                      key={recommendation.id}
-                      className="flex items-start gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                    >
-                      <div className="mt-0.5">
-                        {getPriorityIcon(recommendation.priority)}
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">
-                            {recommendation.title}
-                          </h3>
-                          <Badge
-                            variant={getPriorityVariant(recommendation.priority)}
-                          >
-                            {recommendation.priority === "high"
-                              ? "Alta"
-                              : recommendation.priority === "medium"
-                                ? "Media"
-                                : "Baja"}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {recommendation.description}
-                        </p>
-                        <p className="text-sm font-medium text-primary">
-                          {recommendation.action}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+
           </>
         )}
       </div>

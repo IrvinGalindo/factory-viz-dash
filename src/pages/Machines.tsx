@@ -170,7 +170,7 @@ const Machines = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{t('machines_title')}</h1>
             <p className="text-muted-foreground">{t('machines_desc')}</p>
@@ -178,7 +178,7 @@ const Machines = () => {
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2" onClick={resetForm}>
+              <Button className="gap-2 w-full sm:w-auto" onClick={resetForm}>
                 <Plus className="h-4 w-4" />
                 {t('create_machine')}
               </Button>
@@ -357,63 +357,65 @@ const Machines = () => {
                 <p className="text-muted-foreground">{t('create_first_machine')}</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('cmm')}</TableHead>
-                    <TableHead>{t('line')}</TableHead>
-                    <TableHead>{t('process')}</TableHead>
-                    <TableHead>{t('creation_date')}</TableHead>
-                    <TableHead>{t('actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {machines
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((machine) => (
-                      <TableRow key={machine.machine_id}>
-                        <TableCell className="font-medium">
-                          {machine.cmm_name || t('unknown_name')}
-                        </TableCell>
-                        <TableCell>
-                          {machine.line || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {machine.process || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(machine.created_at).toLocaleDateString('es-MX')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEditDialog(machine)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteMachine(machine.machine_id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('cmm')}</TableHead>
+                      <TableHead>{t('line')}</TableHead>
+                      <TableHead>{t('process')}</TableHead>
+                      <TableHead>{t('creation_date')}</TableHead>
+                      <TableHead>{t('actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {machines
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((machine) => (
+                        <TableRow key={machine.machine_id}>
+                          <TableCell className="font-medium">
+                            {machine.cmm_name || t('unknown_name')}
+                          </TableCell>
+                          <TableCell>
+                            {machine.line || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {machine.process || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(machine.created_at).toLocaleDateString('es-MX')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditDialog(machine)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteMachine(machine.machine_id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Pagination Controls */}
         {machines.length > itemsPerPage && (
-          <div className="flex items-center justify-between px-2">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+            <div className="text-sm text-muted-foreground text-center sm:text-left">
               {t('showing_machines')
                 .replace('{start}', (((currentPage - 1) * itemsPerPage) + 1).toString())
                 .replace('{end}', Math.min(currentPage * itemsPerPage, machines.length).toString())

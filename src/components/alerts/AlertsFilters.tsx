@@ -116,7 +116,7 @@ export const AlertsFilters = memo(
           {/* Date range filter */}
           <Popover open={dateOpen} onOpenChange={onDateOpenChange}>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="justify-start text-left font-normal">
+              <Button variant="outline" className="w-full justify-start text-left font-normal">
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateRange.from ? (
                   dateRange.to ? (

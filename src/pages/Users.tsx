@@ -253,7 +253,7 @@ const Users = () => {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
               {t('users_title')}
@@ -272,7 +272,7 @@ const Users = () => {
               }}
             >
               <DialogTrigger asChild>
-                <Button className="gap-2">
+                <Button className="gap-2 w-full sm:w-auto">
                   <Plus className="h-4 w-4" />
                   {t('create_user')}
                 </Button>
@@ -318,84 +318,86 @@ const Users = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('name')}</TableHead>
-                    <TableHead>{t('phone')}</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>{t('role')}</TableHead>
-                    <TableHead>{t('status')}</TableHead>
-                    {isAdmin && <TableHead>{t('actions')}</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.user_id}>
-                      <TableCell className="font-medium">
-                        {user.full_name}
-                      </TableCell>
-                      <TableCell>{user.phone ?? "-"}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>
-                          {getRoleLabel(user.role)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {isAdmin ? (
-                          <Switch
-                            checked={user.is_active}
-                            onCheckedChange={(checked) =>
-                              statusMutation.mutate({
-                                id: user.user_id,
-                                isActive: checked,
-                              })
-                            }
-                            disabled={statusMutation.isPending}
-                          />
-                        ) : (
-                          <Badge
-                            variant={user.is_active ? "default" : "destructive"}
-                          >
-                            {user.is_active ? t('active') : t('inactive')}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      {isAdmin && (
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => startEditing(user)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                deleteMutation.mutate(user.user_id)
-                              }
-                              disabled={deleteMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('name')}</TableHead>
+                      <TableHead>{t('phone')}</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>{t('role')}</TableHead>
+                      <TableHead>{t('status')}</TableHead>
+                      {isAdmin && <TableHead>{t('actions')}</TableHead>}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.user_id}>
+                        <TableCell className="font-medium">
+                          {user.full_name}
+                        </TableCell>
+                        <TableCell>{user.phone ?? "-"}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={getRoleBadgeVariant(user.role)}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {isAdmin ? (
+                            <Switch
+                              checked={user.is_active}
+                              onCheckedChange={(checked) =>
+                                statusMutation.mutate({
+                                  id: user.user_id,
+                                  isActive: checked,
+                                })
+                              }
+                              disabled={statusMutation.isPending}
+                            />
+                          ) : (
+                            <Badge
+                              variant={user.is_active ? "default" : "destructive"}
+                            >
+                              {user.is_active ? t('active') : t('inactive')}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditing(user)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  deleteMutation.mutate(user.user_id)
+                                }
+                                disabled={deleteMutation.isPending}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
 
           {/* Pagination Controls */}
           {paginationMeta.total_pages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t">
+              <div className="text-sm text-muted-foreground text-center sm:text-left">
                 {t('showing_items')
                   .replace('{items}', t('label_users'))
                   .replace('{start}', (((paginationMeta.page - 1) * paginationMeta.page_size) + 1).toString())

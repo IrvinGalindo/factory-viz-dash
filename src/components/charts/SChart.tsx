@@ -38,11 +38,11 @@ const CONTROL_CONSTANTS: { [key: number]: { B3: number; B4: number } } = {
 const calculateStdDev = (values: number[], mean: number): number => {
   const n = values.length;
   if (n <= 1) return 0;
-  
+
   const sumSquaredDiffs = values.reduce((sum, value) => {
     return sum + Math.pow(value - mean, 2);
   }, 0);
-  
+
   return Math.sqrt(sumSquaredDiffs / (n - 1));
 };
 
@@ -50,7 +50,7 @@ const calculateStdDev = (values: number[], mean: number): number => {
 const CustomTooltip = ({ active, payload, sBar, uclS, lclS }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    
+
     return (
       <div className="bg-background border border-border rounded-lg shadow-lg p-4 text-sm">
         <div className="font-semibold mb-2 text-foreground border-b pb-2">
@@ -142,10 +142,10 @@ export const SChart = ({ subgroups, processName = "Proceso", item = "" }: SChart
     const { cx, cy, payload } = props;
     if (payload.isOutOfControl) {
       return (
-        <circle 
-          cx={cx} 
-          cy={cy} 
-          r={6} 
+        <circle
+          cx={cx}
+          cy={cy}
+          r={6}
           fill="hsl(var(--destructive))"
           stroke="white"
           strokeWidth={2}
@@ -153,10 +153,10 @@ export const SChart = ({ subgroups, processName = "Proceso", item = "" }: SChart
       );
     }
     return (
-      <circle 
-        cx={cx} 
-        cy={cy} 
-        r={4} 
+      <circle
+        cx={cx}
+        cy={cy}
+        r={4}
         fill="hsl(var(--primary))"
         stroke="white"
         strokeWidth={1}
@@ -202,13 +202,13 @@ export const SChart = ({ subgroups, processName = "Proceso", item = "" }: SChart
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis 
-              dataKey="subgroupNumber" 
+            <XAxis
+              dataKey="subgroupNumber"
               stroke="hsl(var(--foreground))"
               fontSize={12}
               label={{ value: 'Número de Subgrupo', position: 'insideBottom', offset: -10 }}
             />
-            <YAxis 
+            <YAxis
               stroke="hsl(var(--foreground))"
               fontSize={12}
               domain={[Math.max(0, minY - yPadding), maxY + yPadding]}
@@ -216,39 +216,39 @@ export const SChart = ({ subgroups, processName = "Proceso", item = "" }: SChart
               label={{ value: 'Desviación Estándar (s)', angle: -90, position: 'insideLeft' }}
             />
             <Tooltip content={<CustomTooltip sBar={sBar} uclS={uclS} lclS={lclS} />} />
-            
+
             {/* Límite Superior de Control (UCLs) */}
-            <ReferenceLine 
-              y={uclS} 
-              stroke="hsl(var(--destructive))" 
+            <ReferenceLine
+              y={uclS}
+              stroke="hsl(var(--destructive))"
               strokeWidth={2}
               strokeDasharray="5 5"
               label={{ value: 'UCLs', position: 'right', fill: 'hsl(var(--destructive))' }}
             />
-            
+
             {/* Línea Central (s̄) */}
-            <ReferenceLine 
-              y={sBar} 
-              stroke="hsl(var(--foreground))" 
+            <ReferenceLine
+              y={sBar}
+              stroke="hsl(var(--foreground))"
               strokeWidth={2}
               label={{ value: 's̄', position: 'right', fill: 'hsl(var(--foreground))' }}
             />
-            
+
             {/* Límite Inferior de Control (LCLs) */}
             {lclS > 0 && (
-              <ReferenceLine 
-                y={lclS} 
-                stroke="hsl(var(--primary))" 
+              <ReferenceLine
+                y={lclS}
+                stroke="hsl(var(--primary))"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 label={{ value: 'LCLs', position: 'right', fill: 'hsl(var(--primary))' }}
               />
             )}
-            
+
             {/* Línea de datos */}
-            <Line 
-              type="monotone" 
-              dataKey="s" 
+            <Line
+              type="monotone"
+              dataKey="s"
               stroke="hsl(var(--primary))"
               strokeWidth={2}
               dot={<CustomDot />}
@@ -283,24 +283,7 @@ export const SChart = ({ subgroups, processName = "Proceso", item = "" }: SChart
           </div>
         </div>
 
-        {/* Interpretación */}
-        <div className="mt-6 p-4 bg-muted rounded-lg text-sm">
-          <p className="font-semibold mb-2">Interpretación:</p>
-          {outOfControlCount === 0 ? (
-            <p className="text-green-600">
-              ✓ El proceso está en control estadístico. La variabilidad se mantiene estable dentro de los límites establecidos.
-            </p>
-          ) : (
-            <p className="text-destructive">
-              ⚠ Hay {outOfControlCount} punto(s) fuera de control. Esto indica cambios en la variabilidad del proceso que requieren investigación.
-            </p>
-          )}
-          {subgroupSize < 9 && (
-            <p className="mt-2 text-amber-600">
-              ℹ Nota: El tamaño de subgrupo ({subgroupSize}) es menor a 9. Se recomienda usar la Gráfica R para mayor simplicidad.
-            </p>
-          )}
-        </div>
+
       </CardContent>
     </Card>
   );
